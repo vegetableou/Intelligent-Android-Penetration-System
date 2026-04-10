@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}攻击结果 - Android自动化渗透测试框架{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1><i class="fas fa-chart-line"></i> 攻击结果</h1>
+        <p class="text-muted">查看历史攻击记录和系统统计</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-history"></i> 攻击历史</h5>
+            </div>
+            <div class="card-body">
+                <div id="attackHistory">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">加载中...</span>
+                        </div>
+                        <p class="mt-2">加载攻击历史...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-pie"></i> 攻击统计</h5>
+            </div>
+            <div class="card-body">
+                <div id="attackStats">
+                    <div class="text-center text-muted">
+                        <p>暂无统计数据</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-download"></i> 载荷统计</h5>
+            </div>
+            <div class="card-body">
+                <div id="payloadStats">
+                    <div class="text-center text-muted">
+                        <p>加载中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cog"></i> 系统操作</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" onclick="exportData()">
+                        <i class="fas fa-file-export"></i> 导出数据
+                    </button>
+                    <button class="btn btn-outline-warning" onclick="clearHistory()">
+                        <i class="fas fa-trash"></i> 清空历史
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="resetSystem()">
+                        <i class="fas fa-redo"></i> 重置系统
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 详情模态框 -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">攻击详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="detailContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadAttackHistory();
+    loadStats();
+});
+
+function loadAttackHistory() {
+    // 这里应该调用后端API获取历史记录
+    // 暂时使用模拟数据
+    const historyDiv = document.getElementById('attackHistory');
+    
+    // 模拟数据
+    const mockHistory = [
+        {
+            id: 1,
+            type: 'phishing',
+            name: 'Android安全更新',
+            timestamp: new Date().toISOString(),
+            success: true,
+            target: '社会工程学',
+            result: {
+                phishing_url: 'https://abc123.ngrok.io',
+                download_url: 'https://abc123.ngrok.io/update.apk'
+            }
+        },
+        {
+            id: 2,
+            type: 'scan',
+            name: '目标扫描',
+            timestamp: new Date(Date.now() - 3600000).toISOString(),
+            success: true,
+            target: '192.168.1.100',
+            result: {
+                services_count: 3,
+                vulnerabilities_count: 1
+            }
+        }
+    ];
+    
+    displayHistory(mockHistory);
+}
+
+function displayHistory(history) {
+    const historyDiv = document.getElementById('attackHistory');
+    
+    if (history.length === 0) {
+        historyDiv.innerHTML = '<p class="text-muted text-center">暂无攻击记录</p>';
+        return;
+    }
+    
+    let html = '<div class="list-group">';
+    
+    history.forEach(attack => {
+        const date = new Date(attack.timestamp).toLocaleString();
+        const typeIcon = getAttackTypeIcon(attack.type);
+        const successBadge = attack.success ? 
+            '<span class="badge bg-success">成功</span>' : 
+            '<span class="badge bg-danger">失败</span>';
+        
+        html += `
+        <div class="list-group-item list-group-item-action" onclick="showDetails(${attack.id})">
+            <div class="d-flex w-100 justify-content-between">
+                <h6 class="mb-1">${typeIcon} ${attack.name}</h6>
+                ${successBadge}
+            </div>
+            <p class="mb-1">目标: ${attack.target}</p>
+            <small class="text-muted">时间: ${date}</small>
+        </div>
+        `;
+    });
+    
+    html += '</div>';
+    historyDiv.innerHTML = html;
+}
+
+function getAttackTypeIcon(type) {
+    const icons = {
+        'phishing': '<i class="fas fa-fish text-success"></i>',
+        'scan': '<i class="fas fa-search text-primary"></i>',
+        'file_upload': '<i class="fas fa-upload text-warning"></i>',
+        'direct': '<i class="fas fa-bolt text-danger"></i>'
+    };
+    return icons[type] || '<i class="fas fa-question text-muted"></i>';
+}
+
+function loadStats() {
+    // 加载统计数据
+    const statsDiv = document.getElementById('attackStats');
+    const payloadStatsDiv = document.getElementById('payloadStats');
+    
+    // 模拟统计数据
+    statsDiv.innerHTML = `
+        <div class="row text-center">
+            <div class="col-6 mb-3">
+                <h4 class="text-primary">12</h4>
+                <small class="text-muted">总攻击次数</small>
+            </div>
+            <div class="col-6 mb-3">
+                <h4 class="text-success">75%</h4>
+                <small class="text-muted">成功率</small>
+            </div>
+            <div class="col-6">
+                <h4 class="text-info">8</h4>
+                <small class="text-muted">钓鱼攻击</small>
+            </div>
+            <div class="col-6">
+                <h4 class="text-warning">4</h4>
+                <small class="text-muted">扫描任务</small>
+            </div>
+        </div>
+    `;
+    
+    payloadStatsDiv.innerHTML = `
+        <div class="row text-center">
+            <div class="col-12 mb-3">
+                <h4 class="text-success">15</h4>
+                <small class="text-muted">生成载荷</small>
+            </div>
+            <div class="col-12">
+                <h4 class="text-info">3.2 MB</h4>
+                <small class="text-muted">平均大小</small>
+            </div>
+        </div>
+    `;
+}
+
+function showDetails(attackId) {
+    // 显示攻击详情
+    const detailContent = document.getElementById('detailContent');
+    
+    // 模拟详情数据
+    detailContent.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6>基本信息</h6>
+                <table class="table table-sm">
+                    <tr><th>攻击ID:</th><td>${attackId}</td></tr>
+                    <tr><th>攻击类型:</th><td>钓鱼攻击</td></tr>
+                    <tr><th>攻击名称:</th><td>Android安全更新</td></tr>
+                    <tr><th>状态:</th><td><span class="badge bg-success">成功</span></td></tr>
+                    <tr><th>时间:</th><td>${new Date().toLocaleString()}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6>攻击详情</h6>
+                <table class="table table-sm">
+                    <tr><th>钓鱼URL:</th><td><a href="#">https://abc123.ngrok.io</a></td></tr>
+                    <tr><th>载荷文件:</th><td>system_update_12345.apk</td></tr>
+                    <tr><th>文件大小:</th><td>3.45 MB</td></tr>
+                    <tr><th>监听器:</th><td>0.0.0.0:4444</td></tr>
+                </table>
+            </div>
+        </div>
+        <div class="mt-3">
+            <h6>攻击日志</h6>
+            <div class="bg-light p-3 rounded" style="max-height: 200px; overflow-y: auto;">
+                <pre class="mb-0 small">[2024-01-01 10:00:00] 开始钓鱼攻击
+[2024-01-01 10:00:05] 生成恶意APK载荷
+[2024-01-01 10:00:10] 启动Ngrok隧道
+[2024-01-01 10:00:15] 部署钓鱼页面
+[2024-01-01 10:00:20] 启动MSF监听器
+[2024-01-01 10:05:30] 目标访问钓鱼页面
+[2024-01-01 10:06:15] 目标下载APK文件
+[2024-01-01 10:08:45] 建立Meterpreter会话</pre>
+            </div>
+        </div>
+    `;
+    
+    new bootstrap.Modal(document.getElementById('detailModal')).show();
+}
+
+function exportData() {
+    alert('导出功能开发中...');
+}
+
+function clearHistory() {
+    if (confirm('确定要清空所有历史记录吗？此操作不可恢复。')) {
+        alert('历史记录已清空');
+        loadAttackHistory();
+    }
+}
+
+function resetSystem() {
+    if (confirm('确定要重置系统吗？这将停止所有服务并清空数据。')) {
+        alert('系统重置功能开发中...');
+    }
+}
+</script>
+{% endblock %}

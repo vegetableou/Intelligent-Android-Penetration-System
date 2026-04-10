@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector android:drawable="@drawable/$anim_hearts__0"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt">
+    <target android:name="scale" android:animation="@drawable/$anim_hearts__1" />
+    <target android:name="path" android:animation="@drawable/$anim_hearts__2" />
+    <target android:name="path_1" android:animation="@drawable/$anim_hearts__3" />
+    <target android:name="path_2" android:animation="@drawable/$anim_hearts__4" />
+    <target android:name="path_3" android:animation="@drawable/$anim_hearts__5" />
+    <target android:name="path_4" android:animation="@drawable/$anim_hearts__6" />
+    <target android:name="path_5" android:animation="@drawable/$anim_hearts__7" />
+    <target android:name="path_6" android:animation="@drawable/$anim_hearts__8" />
+    <target android:name="path_7" android:animation="@drawable/$anim_hearts__9" />
+    <target android:name="path_8" android:animation="@drawable/$anim_hearts__10" />
+    <target android:name="path_9" android:animation="@drawable/$anim_hearts__11" />
+    <target android:name="path_10" android:animation="@drawable/$anim_hearts__12" />
+    <target android:name="path_11" android:animation="@drawable/$anim_hearts__13" />
+    <target android:name="path_12" android:animation="@drawable/$anim_hearts__14" />
+</animated-vector>

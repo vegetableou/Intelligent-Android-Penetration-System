@@ -1,0 +1,503 @@
+{% extends "base.html" %}
+
+{% block title %}控制面板 - c{% endblock %}
+
+{% block content %}
+<!-- 配置状态提示 -->
+<div id="configAlert" class="alert alert-warning" style="display: none;">
+    <i class="fas fa-exclamation-triangle"></i> 系统未初始化，请先设置LHOST
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <h1><i class="fas fa-tachometer-alt"></i> 控制面板</h1>
+        <p class="text-muted">系统状态和快速操作</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- 系统状态卡片 - 保持原版布局 -->
+    <div class="col-md-3 mb-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 id="ngrokStatusIcon"><i class="fas fa-satellite-dish"></i></h4>
+                        <h6>Ngrok状态</h6>
+                    </div>
+                    <div>
+                        <span id="ngrokStatus" class="badge bg-secondary">检查中...</span>
+                    </div>
+                </div>
+                <p id="ngrokUrl" class="small mb-0">-</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 id="listenerStatusIcon"><i class="fas fa-broadcast-tower"></i></h4>
+                        <h6>监听器状态</h6>
+                    </div>
+                    <div>
+                        <span id="listenerStatus" class="badge bg-secondary">检查中...</span>
+                    </div>
+                </div>
+                <p id="listenerInfo" class="small mb-0">-</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4><i class="fas fa-history"></i></h4>
+                        <h6>攻击历史</h6>
+                    </div>
+                    <div>
+                        <span id="attackCount" class="badge bg-dark">0</span>
+                    </div>
+                </div>
+                <p class="small mb-0" id="lastAttack">无记录</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4><i class="fas fa-shield-alt"></i></h4>
+                        <h6>系统状态</h6>
+                    </div>
+                    <div>
+                        <span id="systemStatus" class="badge bg-success">正常</span>
+                    </div>
+                </div>
+                <p class="small mb-0" id="lhostInfo">LHOST: -</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <!-- 系统初始化卡片 - 新增 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cog"></i> 系统初始化</h5>
+            </div>
+            <div class="card-body">
+                <div id="configStatus">
+                    <p class="text-muted">加载配置状态...</p>
+                </div>
+                <form id="initForm">
+                    <div class="mb-3">
+                        <label for="initLhost" class="form-label">监听地址 (LHOST)</label>
+                        <input type="text" class="form-control" id="initLhost" 
+                               placeholder="例如: 192.168.1.100" required>
+                        <div class="form-text">这是您的本地IP地址，用于接收反向连接</div>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-play"></i> 初始化系统
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-rocket"></i> 快速操作</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" onclick="startNgrok()">
+                        <i class="fas fa-play"></i> 启动Ngrok
+                    </button>
+                    <button class="btn btn-success" onclick="startListener()">
+                        <i class="fas fa-play-circle"></i> 启动监听器
+                    </button>
+                    <button class="btn btn-warning" onclick="quickPhishing()">
+                        <i class="fas fa-fish"></i> 快速钓鱼攻击
+                    </button>
+                    <button class="btn btn-danger" onclick="stopAll()">
+                        <i class="fas fa-stop"></i> 停止所有服务
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 系统配置卡片 - 修改为使用全局配置 -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cogs"></i> 当前配置</h5>
+            </div>
+            <div class="card-body">
+                <div id="currentConfig">
+                    <p class="text-muted">加载配置信息...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-history"></i> 最近活动</h5>
+            </div>
+            <div class="card-body">
+                <div id="recentActivity">
+                    <p class="text-muted text-center">暂无活动记录</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar"></i> 统计信息</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h4 id="payloadsCount">0</h4>
+                        <small class="text-muted">生成载荷</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 id="attacksCount">0</h4>
+                        <small class="text-muted">攻击次数</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 id="successRate">0%</h4>
+                        <small class="text-muted">成功率</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 页面加载时获取状态
+document.addEventListener('DOMContentLoaded', function() {
+    checkConfigStatus();
+    updateSystemStatus();
+    setInterval(updateSystemStatus, 5000); // 每5秒更新一次
+});
+
+// 检查配置状态
+function checkConfigStatus() {
+    // 使用base.html中定义的getConfig函数获取配置
+    if (typeof getConfig === 'function') {
+        getConfig()
+            .then(config => {
+                const statusDiv = document.getElementById('configStatus');
+                const lhostInput = document.getElementById('initLhost');
+                const configAlert = document.getElementById('configAlert');
+                const currentConfigDiv = document.getElementById('currentConfig');
+                
+                if (config.controller_initialized) {
+                    statusDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> 系统已初始化
+                            <br><strong>LHOST:</strong> ${config.lhost}
+                        </div>
+                    `;
+                    // 填充输入框
+                    if (lhostInput) {
+                        lhostInput.value = config.lhost;
+                    }
+                    // 隐藏配置警告
+                    configAlert.style.display = 'none';
+                    // 更新当前配置显示
+                    currentConfigDiv.innerHTML = `
+                        <table class="table table-sm">
+                            <tr><th>LHOST</th><td>${config.lhost}</td></tr>
+                            <tr><th>状态</th><td><span class="badge bg-success">已初始化</span></td></tr>
+                        </table>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 系统未初始化，请先设置LHOST
+                        </div>
+                    `;
+                    // 显示配置警告
+                    configAlert.style.display = 'block';
+                    // 更新当前配置显示
+                    currentConfigDiv.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 系统未初始化
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('检查配置状态失败:', error);
+            });
+    } else {
+        // 备用方案：直接调用API
+        fetch('/api/config/get')
+            .then(response => response.json())
+            .then(data => {
+                // ... 原有代码保持不变 ...
+                const statusDiv = document.getElementById('configStatus');
+                const lhostInput = document.getElementById('initLhost');
+                const configAlert = document.getElementById('configAlert');
+                const currentConfigDiv = document.getElementById('currentConfig');
+                
+                if (data.controller_initialized) {
+                    statusDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> 系统已初始化
+                            <br><strong>LHOST:</strong> ${data.lhost}
+                        </div>
+                    `;
+                    // 填充输入框
+                    if (lhostInput) {
+                        lhostInput.value = data.lhost;
+                    }
+                    // 隐藏配置警告
+                    configAlert.style.display = 'none';
+                    // 更新当前配置显示
+                    currentConfigDiv.innerHTML = `
+                        <table class="table table-sm">
+                            <tr><th>LHOST</th><td>${data.lhost}</td></tr>
+                            <tr><th>状态</th><td><span class="badge bg-success">已初始化</span></td></tr>
+                        </table>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 系统未初始化，请先设置LHOST
+                        </div>
+                    `;
+                    // 显示配置警告
+                    configAlert.style.display = 'block';
+                    // 更新当前配置显示
+                    currentConfigDiv.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> 系统未初始化
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('检查配置状态失败:', error);
+            });
+    }
+}
+
+// 初始化表单
+document.getElementById('initForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const lhost = document.getElementById('initLhost').value;
+    
+    if (!lhost) {
+        alert('请输入LHOST地址');
+        return;
+    }
+    
+    // 使用base.html中定义的initializeSystem函数
+    if (typeof initializeSystem === 'function') {
+        initializeSystem(lhost)
+            .then(data => {
+                if (data.success) {
+                    alert('系统初始化成功！');
+                    checkConfigStatus();
+                    updateSystemStatus();
+                } else {
+                    alert('初始化失败: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('请求失败: ' + error);
+            });
+    } else {
+        // 备用方案：直接调用API
+        fetch('/api/init', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({lhost: lhost})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('系统初始化成功！');
+                checkConfigStatus();
+                updateSystemStatus();
+                // 更新全局配置
+                window.APP_CONFIG = {
+                    lhost: data.lhost,
+                    controller_initialized: true
+                };
+            } else {
+                alert('初始化失败: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('请求失败: ' + error);
+        });
+    }
+});
+
+// 保持原版的状态更新函数
+function updateSystemStatus() {
+    fetch('/api/system/status')
+        .then(response => response.json())
+        .then(data => {
+            // 更新Ngrok状态
+            const ngrokStatus = document.getElementById('ngrokStatus');
+            const ngrokIcon = document.getElementById('ngrokStatusIcon');
+            const ngrokUrl = document.getElementById('ngrokUrl');
+            
+            if (data.ngrok_running) {
+                ngrokStatus.className = 'badge bg-success';
+                ngrokStatus.textContent = '运行中';
+                ngrokIcon.innerHTML = '<i class="fas fa-satellite-dish text-success"></i>';
+                ngrokUrl.textContent = data.ngrok_url || '等待URL...';
+            } else {
+                ngrokStatus.className = 'badge bg-danger';
+                ngrokStatus.textContent = '已停止';
+                ngrokIcon.innerHTML = '<i class="fas fa-satellite-dish text-danger"></i>';
+                ngrokUrl.textContent = '-';
+            }
+
+            // 更新监听器状态
+            const listenerStatus = document.getElementById('listenerStatus');
+            const listenerIcon = document.getElementById('listenerStatusIcon');
+            const listenerInfo = document.getElementById('listenerInfo');
+            
+            if (data.listener_running) {
+                listenerStatus.className = 'badge bg-success';
+                listenerStatus.textContent = '运行中';
+                listenerIcon.innerHTML = '<i class="fas fa-broadcast-tower text-success"></i>';
+                listenerInfo.textContent = `Port: ${data.listener_port || '4444'}`;
+            } else {
+                listenerStatus.className = 'badge bg-danger';
+                listenerStatus.textContent = '已停止';
+                listenerIcon.innerHTML = '<i class="fas fa-broadcast-tower text-danger"></i>';
+                listenerInfo.textContent = '-';
+            }
+
+            // 更新攻击历史
+            document.getElementById('attackCount').textContent = data.attack_history_count || 0;
+            document.getElementById('lhostInfo').textContent = `LHOST: ${data.lhost || '未设置'}`;
+            
+            // 更新统计信息
+            updateStatistics(data);
+        })
+        .catch(error => {
+            console.error('状态更新失败:', error);
+        });
+}
+
+// 更新统计信息
+function updateStatistics(data) {
+    // 这里可以添加更多的统计信息更新逻辑
+    document.getElementById('payloadsCount').textContent = data.payloads_count || 0;
+    document.getElementById('attacksCount').textContent = data.attack_history_count || 0;
+    
+    // 计算成功率（示例逻辑）
+    const successRate = data.success_rate || 0;
+    document.getElementById('successRate').textContent = `${successRate}%`;
+}
+
+// 保持原版的快速操作函数，但使用全局配置的LHOST
+function startNgrok() {
+    fetch('/api/ngrok/start', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({port: 8080})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Ngrok启动成功！\nURL: ' + (data.ngrok_url || '获取中...'));
+        } else {
+            alert('Ngrok启动失败: ' + (data.error || data.message || '未知错误'));
+        }
+        updateSystemStatus();
+    })
+    .catch(error => {
+        alert('请求失败: ' + error);
+    });
+}
+
+function startListener() {
+    // 使用全局配置的LHOST
+    getConfig().then(config => {
+        if (!config.controller_initialized) {
+            alert('系统未初始化，请先设置LHOST');
+            return;
+        }
+        
+        fetch('/api/listener/start', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                lhost: config.lhost,
+                lport: 4444
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.success ? '监听器启动成功' : '启动失败: ' + data.error);
+            updateSystemStatus();
+        });
+    });
+}
+
+function quickPhishing() {
+    // 使用全局配置的LHOST
+    getConfig().then(config => {
+        if (!config.controller_initialized) {
+            alert('系统未初始化，请先设置LHOST');
+            return;
+        }
+        
+        fetch('/api/phishing/attack', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                lhost: config.lhost,
+                attack_name: '快速安全更新',
+                app_name: 'System Update'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('钓鱼攻击启动成功！\nURL: ' + data.phishing_url);
+            } else {
+                alert('攻击失败: ' + data.error);
+            }
+            updateSystemStatus();
+        });
+    });
+}
+
+function stopAll() {
+    if (confirm('确定要停止所有服务吗？')) {
+        fetch('/api/ngrok/stop', {method: 'POST'});
+        fetch('/api/listener/stop', {method: 'POST'});
+        fetch('/api/phishing/stop', {method: 'POST'});
+        
+        setTimeout(() => {
+            updateSystemStatus();
+            alert('所有服务已停止');
+        }, 1000);
+    }
+}
+</script>
+{% endblock %}

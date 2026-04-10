@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}MSF RPC启动说明 - Android自动化渗透测试框架{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-info-circle"></i> MSF RPC服务启动说明</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h5>为什么需要MSF RPC？</h5>
+                    <p>MSF RPC服务允许我们的框架与Metasploit进行通信，实现：</p>
+                    <ul>
+                        <li>实时会话管理</li>
+                        <li>远程命令执行</li>
+                        <li>自动化模块运行</li>
+                        <li>高级攻击功能</li>
+                    </ul>
+                </div>
+
+                <h5>启动方法</h5>
+                
+                <div class="mb-4">
+                    <h6>方法1：手动启动</h6>
+                    <pre class="bg-dark text-light p-3 rounded">msfrpcd -P your_password -S -f -a 127.0.0.1</pre>
+                    <p class="text-muted">将 <code>your_password</code> 替换为你的密码</p>
+                </div>
+
+                <div class="mb-4">
+                    <h6>方法2：使用系统服务（推荐）</h6>
+                    <p>创建系统服务文件：</p>
+                    <pre class="bg-dark text-light p-3 rounded">
+# 创建服务文件
+sudo nano /etc/systemd/system/msfrpcd.service
+
+# 文件内容：
+[Unit]
+Description=Metasploit RPC Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/msfrpcd -P your_password -S -f -a 127.0.0.1
+Restart=always
+
+[Install]
+WantedBy=multi-user.target</pre>
+                    
+                    <p>启用服务：</p>
+                    <pre class="bg-dark text-light p-3 rounded">
+sudo systemctl daemon-reload
+sudo systemctl enable msfrpcd.service
+sudo systemctl start msfrpcd.service</pre>
+                </div>
+
+                <div class="mb-4">
+                    <h6>方法3：使用我们的框架自动启动</h6>
+                    <p>在配置文件中设置自动启动：</p>
+                    <pre class="bg-dark text-light p-3 rounded">
+# config/config.yaml
+metasploit:
+  msfrpc_auto_start: true
+  msfrpc_password: "your_password"
+  msfrpc_port: 55553</pre>
+                </div>
+
+                <div class="alert alert-warning">
+                    <h6>安全提醒</h6>
+                    <ul>
+                        <li>使用强密码保护MSF RPC服务</li>
+                        <li>仅绑定到本地接口（127.0.0.1）</li>
+                        <li>在生产环境中考虑使用SSL加密</li>
+                        <li>定期更新密码</li>
+                    </ul>
+                </div>
+
+                <div class="text-center">
+                    <button class="btn btn-primary" onclick="window.history.back()">
+                        <i class="fas fa-arrow-left"></i> 返回
+                    </button>
+                    <button class="btn btn-success" onclick="testMsfrpcConnection()">
+                        <i class="fas fa-plug"></i> 测试连接
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function testMsfrpcConnection() {
+    fetch('/api/system/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.msfrpc_available) {
+                alert('✅ MSF RPC连接成功！');
+            } else {
+                alert('❌ MSF RPC连接失败，请检查服务是否启动');
+            }
+        });
+}
+</script>
+{% endblock %}

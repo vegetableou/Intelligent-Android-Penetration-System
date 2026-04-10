@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+
+{% block title %}配置信息 - 智能安卓渗透系统V1.0{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1><i class="fas fa-cog"></i> 配置信息</h1>
+        <p class="text-muted">查看当前框架的全部配置参数（敏感密钥已脱敏显示）</p>
+    </div>
+</div>
+
+<!-- 顶部快捷状态卡片 -->
+<div class="row mt-3" id="summaryCards">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <i class="fas fa-globe fa-2x"></i>
+                <div>
+                    <div class="fw-bold">Web 服务</div>
+                    <div id="sumWeb" class="small">加载中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card h-100" id="cardNgrok" style="background: linear-gradient(135deg,#11998e,#38ef7d); color:#fff;">
+            <div class="card-body d-flex align-items-center gap-3">
+                <i class="fas fa-satellite-dish fa-2x"></i>
+                <div>
+                    <div class="fw-bold">Ngrok 隧道</div>
+                    <div id="sumNgrok" class="small">加载中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card h-100" id="cardGophish" style="background: linear-gradient(135deg,#f7971e,#ffd200); color:#333;">
+            <div class="card-body d-flex align-items-center gap-3">
+                <i class="fas fa-fish fa-2x"></i>
+                <div>
+                    <div class="fw-bold">GoPhish</div>
+                    <div id="sumGophish" class="small">加载中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-danger text-white h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <i class="fas fa-terminal fa-2x"></i>
+                <div>
+                    <div class="fw-bold">Metasploit</div>
+                    <div id="sumMsf" class="small">加载中...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 端口映射总览 -->
+<div class="row mt-2">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-network-wired me-2"></i>端口使用说明</span>
+                <span class="badge bg-light text-dark" id="portCount">-</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="portTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width:90px">端口</th>
+                                <th style="width:70px">协议</th>
+                                <th style="width:200px">服务</th>
+                                <th>用途说明</th>
+                                <th style="width:80px">状态</th>
+                            </tr>
+                        </thead>
+                        <tbody id="portTableBody">
+                            <tr><td colspan="5" class="text-center text-muted py-3">加载中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 详细配置分组 -->
+<div class="row">
+
+    <!-- Ngrok 配置 -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-satellite-dish me-2"></i>Ngrok 配置
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0" id="ngrokDetails">
+                    <dt class="col-sm-5 text-muted">加载中...</dt><dd class="col-sm-7">-</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- GoPhish 配置 -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-fish me-2"></i>GoPhish 配置
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0" id="gophishDetails">
+                    <dt class="col-sm-5 text-muted">加载中...</dt><dd class="col-sm-7">-</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Web 服务配置 -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-server me-2"></i>Web 服务配置
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0" id="webDetails">
+                    <dt class="col-sm-5 text-muted">加载中...</dt><dd class="col-sm-7">-</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metasploit 配置 -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-terminal me-2"></i>Metasploit 配置
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0" id="msfDetails">
+                    <dt class="col-sm-5 text-muted">加载中...</dt><dd class="col-sm-7">-</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- 扫描配置 -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-search me-2"></i>扫描配置
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0" id="scanDetails">
+                    <dt class="col-sm-5 text-muted">加载中...</dt><dd class="col-sm-7">-</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- 隐身 & 日志配置 -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-user-secret me-2"></i>隐身 & 日志配置
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0" id="stealthDetails">
+                    <dt class="col-sm-5 text-muted">加载中...</dt><dd class="col-sm-7">-</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- 刷新提示 -->
+<div class="row mb-5">
+    <div class="col text-center text-muted small">
+        <i class="fas fa-info-circle"></i>
+        配置信息直接读取自 <code>config/config.yaml</code>，敏感密钥已自动脱敏。
+        如需查看完整密钥，请直接编辑配置文件。
+        <button class="btn btn-sm btn-outline-secondary ms-3" onclick="loadConfig()">
+            <i class="fas fa-sync-alt"></i> 刷新
+        </button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<style>
+    /* 让 dl/dd 对齐且美观 */
+    #ngrokDetails dt, #gophishDetails dt, #webDetails dt,
+    #msfDetails dt, #scanDetails dt, #stealthDetails dt {
+        font-size: 0.88rem;
+    }
+    #ngrokDetails dd, #gophishDetails dd, #webDetails dd,
+    #msfDetails dd, #scanDetails dd, #stealthDetails dd {
+        font-size: 0.88rem;
+        word-break: break-all;
+    }
+
+    .secret-value {
+        font-family: monospace;
+        letter-spacing: 0.05em;
+        cursor: pointer;
+        user-select: none;
+    }
+    .secret-value .masked { display: inline; }
+    .secret-value .revealed { display: none; font-weight: 600; color: #c0392b; }
+    .secret-value.show .masked { display: none; }
+    .secret-value.show .revealed { display: inline; }
+    .secret-value .toggle-icon { margin-left: 5px; color: #888; font-size: 0.8rem; }
+
+    .port-badge {
+        font-size: 1rem;
+        font-family: monospace;
+        letter-spacing: 0.05em;
+    }
+
+    .status-dot {
+        display: inline-block;
+        width: 9px; height: 9px;
+        border-radius: 50%;
+        margin-right: 4px;
+        vertical-align: middle;
+    }
+    .dot-on  { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
+    .dot-off { background: #bdc3c7; }
+
+    .enabled-badge  { background: #d5f5e3; color: #1e8449; }
+    .disabled-badge { background: #f2f3f4; color: #888; }
+
+    .card-header { font-weight: 600; }
+</style>
+
+<script>
+// 原始配置数据（从 API 拉取后存储）
+let _rawConfig = null;
+// 记录各密钥是否已展开
+let _revealed = {};
+
+async function loadConfig() {
+    try {
+        const resp = await fetch('/api/config-info');
+        const data = await resp.json();
+        _rawConfig = data;
+        renderAll(data);
+    } catch(e) {
+        console.error('获取配置失败', e);
+    }
+}
+
+/* ── 渲染入口 ── */
+function renderAll(d) {
+    renderSummaryCards(d);
+    renderPortTable(d.port_map || []);
+    renderNgrok(d.ngrok || {});
+    renderGophish(d.gophish || {});
+    renderWeb(d.web || {});
+    renderMsf(d.metasploit || {});
+    renderScan(d.scanning || {});
+    renderStealth(d.stealth || {}, d.logging || {});
+}
+
+/* ── 顶部快捷卡片 ── */
+function renderSummaryCards(d) {
+    document.getElementById('sumWeb').textContent =
+        `${d.web.host}:${d.web.port}  ${d.web.debug ? '调试模式' : '生产模式'}`;
+
+    const ngrokEl = document.getElementById('sumNgrok');
+    const gophishEl = document.getElementById('sumGophish');
+    ngrokEl.textContent   = d.ngrok.enabled   ? `已启用  端口 ${d.ngrok.default_port}`   : '未启用';
+    gophishEl.textContent = d.gophish.enabled ? `已启用  ${d.gophish.base_url}` : '未启用';
+
+    document.getElementById('sumMsf').textContent =
+        `监听 ${d.metasploit.default_lhost}:${d.metasploit.default_lport}  MSFRPC :${d.metasploit.msfrpc_port}`;
+}
+
+/* ── 端口映射表 ── */
+function renderPortTable(ports) {
+    document.getElementById('portCount').textContent = `${ports.length} 个端口`;
+    const tbody = document.getElementById('portTableBody');
+    tbody.innerHTML = '';
+    ports.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><span class="badge port-badge bg-dark">${p.port}</span></td>
+            <td><span class="badge bg-secondary">${p.protocol}</span></td>
+            <td><strong>${p.service}</strong></td>
+            <td class="text-muted">${p.description}</td>
+            <td><span class="status-dot dot-on"></span>配置</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+/* ── 通用 dl 渲染 ── */
+function renderDl(elId, rows) {
+    const el = document.getElementById(elId);
+    el.innerHTML = '';
+    rows.forEach(([label, value, isSecret, secretKey]) => {
+        const dt = document.createElement('dt');
+        dt.className = 'col-sm-5 text-muted';
+        dt.textContent = label;
+
+        const dd = document.createElement('dd');
+        dd.className = 'col-sm-7';
+
+        if (isSecret && secretKey) {
+            dd.innerHTML = buildSecretHtml(value, secretKey);
+        } else if (typeof value === 'boolean') {
+            const cls = value ? 'enabled-badge' : 'disabled-badge';
+            const txt = value ? '已启用' : '已禁用';
+            dd.innerHTML = `<span class="badge ${cls}">${txt}</span>`;
+        } else if (Array.isArray(value)) {
+            dd.innerHTML = value.map(v => `<span class="badge bg-secondary me-1">${v}</span>`).join('');
+        } else {
+            dd.innerHTML = `<code>${value ?? '—'}</code>`;
+        }
+
+        el.appendChild(dt);
+        el.appendChild(dd);
+    });
+}
+
+/* ── 密钥脱敏 HTML ── */
+function buildSecretHtml(masked, key) {
+    const isRevealed = _revealed[key] || false;
+    // 从原始配置取真实值（仍以脱敏值展示，点击后展示脱敏值）
+    // 注意：后端已脱敏，这里只做显示切换动画效果
+    return `<span class="secret-value${isRevealed ? ' show' : ''}"
+                  data-key="${key}"
+                  onclick="toggleSecret(this)"
+                  title="点击切换显示">
+                <span class="masked"><code>${masked}</code></span>
+                <span class="revealed"><code>${masked}</code></span>
+                <span class="toggle-icon"><i class="fas fa-eye"></i></span>
+            </span>`;
+}
+
+function toggleSecret(el) {
+    el.classList.toggle('show');
+    const key = el.dataset.key;
+    _revealed[key] = el.classList.contains('show');
+    const icon = el.querySelector('.toggle-icon i');
+    icon.className = el.classList.contains('show') ? 'fas fa-eye-slash' : 'fas fa-eye';
+}
+
+/* ── 各模块渲染 ── */
+function renderNgrok(n) {
+    renderDl('ngrokDetails', [
+        ['启用状态',   n.enabled,      false],
+        ['Auth Token', n.auth_token,   true, 'ngrok_token'],
+        ['默认端口',   n.default_port, false],
+    ]);
+}
+
+function renderGophish(g) {
+    renderDl('gophishDetails', [
+        ['启用状态',    g.enabled,   false],
+        ['API 密钥',   g.api_key,   true, 'gophish_apikey'],
+        ['Base URL',  g.base_url,  false],
+        ['Admin URL', g.admin_url, false],
+    ]);
+}
+
+function renderWeb(w) {
+    renderDl('webDetails', [
+        ['监听地址', w.host,  false],
+        ['监听端口', w.port,  false],
+        ['调试模式', w.debug, false],
+    ]);
+}
+
+function renderMsf(m) {
+    renderDl('msfDetails', [
+        ['默认 Payload',   m.default_payload,   false],
+        ['默认 LHOST',     m.default_lhost,     false],
+        ['默认 LPORT',     m.default_lport,     false],
+        ['MSFRPC 端口',    m.msfrpc_port,       false],
+        ['MSFRPC 密码',    m.msfrpc_password,   true, 'msf_password'],
+        ['自动启动 MSFRPC', m.msfrpc_auto_start, false],
+    ]);
+}
+
+function renderScan(s) {
+    renderDl('scanDetails', [
+        ['Nmap 参数', s.nmap_options, false],
+        ['扫描超时', `${s.timeout} 秒`,       false],
+    ]);
+}
+
+function renderStealth(s, l) {
+    renderDl('stealthDetails', [
+        ['默认隐身级别', s.default_level,      false],
+        ['可用编码器',   s.available_encoders, false],
+        ['最大编码次数', s.max_iterations,     false],
+        ['日志级别',     l.level,              false],
+        ['日志文件',     l.file,               false],
+    ]);
+}
+
+// 页面加载时自动拉取
+document.addEventListener('DOMContentLoaded', loadConfig);
+</script>
+{% endblock %}

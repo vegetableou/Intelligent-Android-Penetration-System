@@ -1,0 +1,1104 @@
+
+{% extends "base.html" %}
+
+{% block title %}目标扫描 - Android自动化渗透测试框架{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1><i class="fas fa-bullseye"></i> 目标扫描</h1>
+        <p class="text-muted">扫描目标系统，识别服务和漏洞，智能推荐攻击链</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- 左侧：扫描配置 -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cog"></i> 扫描配置</h5>
+            </div>
+            <div class="card-body">
+                <form id="scanForm">
+                    <div class="mb-3">
+                        <label for="target" class="form-label">目标地址</label>
+                        <input type="text" class="form-control" id="target" 
+                               placeholder="192.168.1.100 或 example.com" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="scanType" class="form-label">扫描类型</label>
+                        <select class="form-select" id="scanType">
+                            <option value="quick">快速扫描 (主机发现)</option>
+                            <option value="full">完整扫描 (主机+服务)</option>
+                            <option value="vuln">漏洞扫描</option>
+                            <option value="web_recon">Web应用侦察</option>
+                            <option value="comprehensive" selected>综合扫描 (全部5项)</option>
+                        </select>
+                        <div class="form-text" id="scanTypeDesc">执行全部5大扫描功能并生成情报</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-search"></i> 开始扫描
+                        </button>
+                        <button type="button" class="btn btn-success" id="btnScanAndDecide" onclick="scanAndDecide()">
+                            <i class="fas fa-magic"></i> 一键扫描+智能决策
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 扫描进度面板 -->
+        <div class="card mt-3" id="progressCard" style="display:none;">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-spinner fa-spin"></i> 扫描进度</h5>
+            </div>
+            <div class="card-body">
+                <div id="progressSteps">
+                    <div class="step" id="step-host"><i class="fas fa-circle text-muted"></i> 主机与端口发现</div>
+                    <div class="step" id="step-service"><i class="fas fa-circle text-muted"></i> 服务指纹识别</div>
+                    <div class="step" id="step-web"><i class="fas fa-circle text-muted"></i> Web应用侦察</div>
+                    <div class="step" id="step-vuln"><i class="fas fa-circle text-muted"></i> 漏洞扫描</div>
+                    <div class="step" id="step-intel"><i class="fas fa-circle text-muted"></i> 情报汇总</div>
+                </div>
+                <div class="progress mt-3">
+                    <div id="scanProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                         style="width: 0%"></div>
+                </div>
+                <small class="text-muted mt-2 d-block" id="scanProgressText">准备中...</small>
+            </div>
+        </div>
+
+        <!-- 扫描历史 -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-history"></i> 扫描历史</h5>
+            </div>
+            <div class="card-body">
+                <div id="scanHistory">
+                    <p class="text-muted text-center">暂无扫描记录</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧：结果展示 -->
+    <div class="col-md-8">
+        <!-- 扫描结果 -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-list"></i> 扫描结果</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary" id="btnAnalyze" onclick="analyzeDecision()" style="display:none;">
+                        <i class="fas fa-brain"></i> 智能决策分析
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- 结果标签页 -->
+                <ul class="nav nav-tabs" id="resultTabs" role="tablist" style="display:none;">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="tab-overview" data-bs-toggle="tab" href="#pane-overview">概览</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tab-services" data-bs-toggle="tab" href="#pane-services">服务</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tab-web" data-bs-toggle="tab" href="#pane-web">Web侦察</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tab-vulns" data-bs-toggle="tab" href="#pane-vulns">漏洞</a>
+                    </li>
+                </ul>
+                <div class="tab-content mt-3" id="resultTabContent">
+                    <div class="tab-pane fade show active" id="pane-overview">
+                        <div id="scanResults">
+                            <p class="text-muted text-center">等待扫描结果...</p>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="pane-services">
+                        <div id="serviceResults"></div>
+                    </div>
+                    <div class="tab-pane fade" id="pane-web">
+                        <div id="webResults"></div>
+                    </div>
+                    <div class="tab-pane fade" id="pane-vulns">
+                        <div id="vulnResults"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 决策引擎推荐 -->
+        <div class="card mt-4" id="decisionCard" style="display:none;">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-brain"></i> 智能决策引擎推荐</h5>
+            </div>
+            <div class="card-body">
+                <div id="decisionResults"></div>
+            </div>
+        </div>
+
+        <!-- 攻击建议（兼容旧版简单扫描） -->
+        <div class="card mt-4" id="suggestionsCard">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-robot"></i> 攻击建议</h5>
+            </div>
+            <div class="card-body">
+                <div id="attackSuggestions">
+                    <p class="text-muted text-center">扫描完成后显示攻击建议</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 扫描进度模态框（兼容旧版） -->
+<div class="modal fade" id="scanProgressModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">扫描进行中</h5>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">扫描中...</span>
+                    </div>
+                    <p id="modalProgressText">正在扫描目标...</p>
+                    <div class="progress">
+                        <div id="modalProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                             style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+    .step { padding: 6px 0; font-size: 0.9rem; }
+    .step .fa-circle { font-size: 0.6rem; vertical-align: middle; margin-right: 6px; }
+    .step .fa-check-circle { color: #28a745; margin-right: 6px; }
+    .step .fa-spinner { color: #007bff; margin-right: 6px; }
+    .score-bar { height: 8px; border-radius: 4px; background: #e9ecef; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s; }
+    .chain-card { border-left: 4px solid #007bff; transition: all 0.2s; cursor: pointer; }
+    .chain-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .chain-card.recommended { border-left-color: #28a745; background: #f8fff8; }
+    .risk-badge { font-size: 1.1rem; padding: 4px 12px; }
+</style>
+
+<script>
+let lastIntelligence = null;
+const scanState = new StateManager('scanning');
+let _animateInterval = null;  // 模块级变量，用于清除动画定时器
+
+// 扫描类型描述
+const scanTypeDescs = {
+    'quick': '快速检测主机存活和开放端口',
+    'full': '主机发现 + 服务版本识别',
+    'vuln': '使用Nmap脚本进行漏洞扫描',
+    'web_recon': 'Web目录发现 + 技术栈识别 + 参数发现',
+    'comprehensive': '执行全部5大扫描功能并生成情报'
+};
+
+document.getElementById('scanType').addEventListener('change', function() {
+    document.getElementById('scanTypeDesc').textContent = scanTypeDescs[this.value] || '';
+});
+
+document.getElementById('scanForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const target = document.getElementById('target').value;
+    const scanType = document.getElementById('scanType').value;
+    
+    if (scanType === 'comprehensive') {
+        startComprehensiveScan(target);
+    } else {
+        startScan(target, scanType);
+    }
+});
+
+// ========== 页面加载时恢复状态 ==========
+document.addEventListener('DOMContentLoaded', function() {
+    restorePageState();
+});
+
+function restorePageState() {
+    const saved = scanState.loadState();
+    if (!saved) return;
+    
+    // 恢复表单输入
+    if (saved.target) {
+        document.getElementById('target').value = saved.target;
+    }
+    if (saved.scanType) {
+        document.getElementById('scanType').value = saved.scanType;
+        document.getElementById('scanTypeDesc').textContent = scanTypeDescs[saved.scanType] || '';
+    }
+    
+    // 恢复扫描结果
+    if (saved.lastResults) {
+        if (saved.scanMode === 'comprehensive' || saved.scanMode === 'scan_and_decide') {
+            displayComprehensiveResults(saved.lastResults);
+            if (saved.lastResults.intelligence) {
+                lastIntelligence = saved.lastResults.intelligence;
+                document.getElementById('btnAnalyze').style.display = '';
+            }
+        } else if (saved.lastResults) {
+            displayScanResults(saved.lastResults);
+        }
+    }
+    
+    // 恢复决策结果
+    if (saved.decisionResults) {
+        displayDecisionResults(saved.decisionResults);
+    }
+    
+    // 恢复扫描历史
+    if (saved.scanHistory) {
+        const historyDiv = document.getElementById('scanHistory');
+        historyDiv.innerHTML = saved.scanHistory;
+    }
+    
+    // 如果有正在运行的任务，轮询状态
+    if (saved.taskId && saved.taskStatus === 'running') {
+        document.getElementById('progressCard').style.display = '';
+        animateSteps();
+        scanState.pollTaskStatus(saved.taskId, function(task) {
+            if (task.status === 'completed') {
+                completeAllSteps();
+                updateProgress(100, '扫描完成');
+                if (task.result) {
+                    if (task.result.intelligence) {
+                        lastIntelligence = task.result.intelligence;
+                        displayComprehensiveResults(task.result);
+                        document.getElementById('btnAnalyze').style.display = '';
+                    }
+                    saveCurrentState('completed', task.result);
+                }
+            } else if (task.status === 'failed') {
+                updateProgress(100, '扫描失败: ' + (task.error || '未知错误'));
+                saveCurrentState('failed', null);
+            } else {
+                updateProgress(task.progress || 50, '扫描进行中...');
+            }
+        });
+    }
+}
+
+function saveCurrentState(taskStatus, results) {
+    const state = {
+        target: document.getElementById('target').value,
+        scanType: document.getElementById('scanType').value,
+        taskId: scanState.loadState()?.taskId || null,
+        taskStatus: taskStatus || 'idle',
+        lastResults: results,
+        decisionResults: null,
+        scanMode: null,
+        scanHistory: document.getElementById('scanHistory').innerHTML
+    };
+    
+    // 保存决策结果
+    const decisionCard = document.getElementById('decisionCard');
+    if (decisionCard && decisionCard.style.display !== 'none') {
+        state.decisionResults = window._lastDecisionData || null;
+    }
+    
+    // 保存扫描模式
+    if (state.scanType === 'comprehensive') {
+        state.scanMode = 'comprehensive';
+    }
+    
+    scanState.saveState(state);
+}
+
+// ========== 普通扫描 ==========
+function startScan(target, scanType) {
+    // 重置UI状态
+    document.getElementById('progressCard').style.display = 'none';
+    document.getElementById('resultTabs').style.display = 'none';
+    document.getElementById('decisionCard').style.display = 'none';
+    document.getElementById('suggestionsCard').style.display = '';
+    document.getElementById('btnAnalyze').style.display = 'none';
+    document.getElementById('scanResults').innerHTML = '<p class="text-muted text-center"><i class="fas fa-spinner fa-spin"></i> 扫描中...</p>';
+    document.getElementById('attackSuggestions').innerHTML = '<p class="text-muted text-center">扫描完成后显示攻击建议</p>';
+
+    const progressModal = new bootstrap.Modal(document.getElementById('scanProgressModal'));
+    progressModal.show();
+    updateModalProgress(0, '准备扫描...');
+
+    // 保存初始状态
+    saveCurrentState('running', null);
+
+    fetch('/api/scan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ target, scan_type: scanType })
+    })
+    .then(r => r.json())
+    .then(data => {
+        progressModal.hide();
+        if (data.success !== false) {
+            // 保存任务ID
+            if (data.task_id) {
+                scanState.saveTaskId(data.task_id, 'scan');
+            }
+            displayScanResults(data);
+            addToHistory(target, scanType, data);
+            saveCurrentState('completed', data);
+        } else {
+            showError(data.error || '扫描失败');
+            saveCurrentState('failed', null);
+        }
+    })
+    .catch(err => { progressModal.hide(); showError(err); saveCurrentState('failed', null); });
+
+    simulateModalProgress();
+}
+
+// ========== 综合扫描 ==========
+function startComprehensiveScan(target) {
+    document.getElementById('progressCard').style.display = '';
+    document.getElementById('decisionCard').style.display = 'none';
+    resetProgressSteps();
+    updateProgress(0, '开始综合扫描...');
+    animateSteps();
+    
+    // 保存初始状态
+    saveCurrentState('running', null);
+    
+    fetch('/api/scan/comprehensive', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ target })
+    })
+    .then(r => r.json())
+    .then(data => {
+        completeAllSteps();
+        updateProgress(100, '扫描完成');
+        
+        if (data.success) {
+            // 保存任务ID
+            if (data.task_id) {
+                scanState.saveTaskId(data.task_id, 'comprehensive_scan');
+            }
+            lastIntelligence = data.intelligence;
+            displayComprehensiveResults(data);
+            document.getElementById('btnAnalyze').style.display = '';
+            addToHistory(target, 'comprehensive', data);
+            saveCurrentState('completed', data);
+        } else {
+            showError(data.error || '综合扫描失败');
+            saveCurrentState('failed', null);
+        }
+    })
+    .catch(err => { showError(err); saveCurrentState('failed', null); });
+}
+
+// ========== 一键扫描+决策 ==========
+function scanAndDecide() {
+    const target = document.getElementById('target').value;
+    if (!target) { alert('请输入目标地址'); return; }
+    
+    document.getElementById('progressCard').style.display = '';
+    document.getElementById('decisionCard').style.display = 'none';
+    resetProgressSteps();
+    updateProgress(0, '开始扫描+决策...');
+    animateSteps();
+    
+    // 保存初始状态
+    saveCurrentState('running', null);
+    
+    fetch('/api/scan-and-decide', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ target })
+    })
+    .then(r => r.json())
+    .then(data => {
+        completeAllSteps();
+        updateProgress(100, '分析完成');
+        
+        if (data.success) {
+            // 保存任务ID
+            if (data.task_id) {
+                scanState.saveTaskId(data.task_id, 'scan_and_decide');
+            }
+            lastIntelligence = data.scan?.intelligence || null;
+            if (data.scan) {
+                displayComprehensiveResults(data.scan);
+            } else {
+                document.getElementById('scanResults').innerHTML = '<div class="alert alert-warning">扫描完成但未返回详细数据</div>';
+            }
+            if (data.decision) {
+                displayDecisionResults(data.decision);
+            }
+            addToHistory(target, 'scan+decide', data);
+            
+            // 保存完整状态（含决策）
+            const state = scanState.loadState() || {};
+            state.scanMode = 'scan_and_decide';
+            state.lastResults = data.scan;
+            state.decisionResults = data.decision;
+            state.taskStatus = 'completed';
+            scanState.saveState(state);
+        } else {
+            showError(data.error || '流程失败');
+            saveCurrentState('failed', null);
+        }
+    })
+    .catch(err => { showError(err); saveCurrentState('failed', null); });
+}
+
+// ========== 单独决策分析 ==========
+function analyzeDecision() {
+    if (!lastIntelligence) { alert('请先执行综合扫描'); return; }
+    
+    fetch('/api/decision/analyze', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ intelligence: lastIntelligence })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            displayDecisionResults(data.decision);
+        } else {
+            showError(data.error);
+        }
+    })
+    .catch(err => showError(err));
+}
+
+// ========== 综合结果展示 ==========
+function displayComprehensiveResults(data) {
+    if (!data) {
+        document.getElementById('scanResults').innerHTML = '<div class="alert alert-warning">未获取到扫描数据</div>';
+        return;
+    }
+    document.getElementById('resultTabs').style.display = '';
+    document.getElementById('suggestionsCard').style.display = 'none';
+    
+    const intel = data.intelligence || data;
+    
+    // 概览
+    let overviewHtml = `
+        <div class="alert alert-success">
+            <h6><i class="fas fa-check-circle"></i> 综合扫描完成</h6>
+            <p class="mb-0">目标: ${intel.target || '—'} | 时间: ${intel.scan_timestamp || new Date().toLocaleString()}</p>
+        </div>
+        <div class="row text-center mb-3">
+            <div class="col">
+                <div class="border rounded p-3">
+                    <h3 class="${intel.host_status?.alive ? 'text-success' : 'text-danger'}">${intel.host_status?.alive ? '在线' : '离线'}</h3>
+                    <small class="text-muted">主机状态</small>
+                </div>
+            </div>
+            <div class="col">
+                <div class="border rounded p-3">
+                    <h3>${intel.host_status?.open_ports || 0}</h3>
+                    <small class="text-muted">开放端口</small>
+                </div>
+            </div>
+            <div class="col">
+                <div class="border rounded p-3">
+                    <h3>${intel.vulnerabilities?.total || 0}</h3>
+                    <small class="text-muted">漏洞数量</small>
+                </div>
+            </div>
+            <div class="col">
+                <div class="border rounded p-3">
+                    <h3 class="${getRiskColor(intel.attack_surface_analysis?.overall_risk_score)}">${intel.attack_surface_analysis?.overall_risk_score || 0}</h3>
+                    <small class="text-muted">风险评分</small>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 漏洞严重度分布
+    const sev = intel.vulnerabilities?.by_severity || {};
+    if (intel.vulnerabilities?.total > 0) {
+        overviewHtml += `
+            <h6>漏洞严重度分布</h6>
+            <div class="d-flex gap-2 mb-3">
+                <span class="badge bg-danger">严重: ${sev.critical || 0}</span>
+                <span class="badge bg-warning text-dark">高危: ${sev.high || 0}</span>
+                <span class="badge bg-info">中危: ${sev.medium || 0}</span>
+                <span class="badge bg-secondary">低危: ${sev.low || 0}</span>
+                <span class="badge bg-light text-dark">信息: ${sev.info || 0}</span>
+            </div>
+        `;
+    }
+    
+    // 攻击面分析
+    const atk = intel.attack_surface_analysis;
+    if (atk) {
+        overviewHtml += `<h6>攻击面分析</h6><ul class="list-unstyled">`;
+        overviewHtml += `<li><i class="fas fa-globe text-primary"></i> Web攻击向量: ${atk.web_attack_vectors?.length || 0}</li>`;
+        overviewHtml += `<li><i class="fas fa-network-wired text-info"></i> 网络攻击向量: ${atk.network_attack_vectors?.length || 0}</li>`;
+        overviewHtml += `<li><i class="fas fa-upload ${atk.file_upload_viable ? 'text-success' : 'text-muted'}"></i> 文件上传可行: ${atk.file_upload_viable ? '是' : '否'}</li>`;
+        overviewHtml += `<li><i class="fas fa-bug ${atk.exploit_viable ? 'text-danger' : 'text-muted'}"></i> 漏洞利用可行: ${atk.exploit_viable ? '是' : '否'}</li>`;
+        overviewHtml += `</ul>`;
+    }
+    
+    document.getElementById('scanResults').innerHTML = overviewHtml;
+    
+    // 服务标签页
+    const services = intel.services || [];
+    let svcHtml = '';
+    if (services.length > 0) {
+        svcHtml = `<div class="table-responsive"><table class="table table-sm table-striped">
+            <thead><tr><th>端口</th><th>协议</th><th>状态</th><th>服务</th><th>版本</th><th>产品</th><th>Web</th></tr></thead><tbody>`;
+        services.forEach(s => {
+            svcHtml += `<tr>
+                <td>${s.port}</td><td>${s.protocol}</td>
+                <td><span class="badge ${s.state==='open'?'bg-success':'bg-secondary'}">${s.state}</span></td>
+                <td>${s.service}</td><td>${s.version||'-'}</td><td>${s.product||'-'}</td>
+                <td>${s.is_web ? '<i class="fas fa-check text-success"></i>' : ''}</td>
+            </tr>`;
+        });
+        svcHtml += '</tbody></table></div>';
+    } else {
+        svcHtml = '<p class="text-muted">未发现服务</p>';
+    }
+    document.getElementById('serviceResults').innerHTML = svcHtml;
+    
+    // Web侦察标签页
+    const web = intel.web_attack_surface || {};
+    let webHtml = '';
+    
+    // 技术栈
+    const tech = web.tech_stack || {};
+    if (Object.keys(tech).length > 0) {
+        webHtml += '<h6>技术栈</h6><div class="d-flex flex-wrap gap-2 mb-3">';
+        (tech.servers||[]).forEach(s => webHtml += `<span class="badge bg-primary">${s}</span>`);
+        (tech.cms||[]).forEach(s => webHtml += `<span class="badge bg-danger">${s}</span>`);
+        (tech.frameworks||[]).forEach(s => webHtml += `<span class="badge bg-warning text-dark">${s}</span>`);
+        (tech.languages||[]).forEach(s => webHtml += `<span class="badge bg-info">${s}</span>`);
+        webHtml += '</div>';
+    }
+    
+    // 目录
+    const dirs = web.directories || [];
+    if (dirs.length > 0) {
+        webHtml += `<h6>发现的目录/文件 (${dirs.length})</h6>
+            <div class="table-responsive"><table class="table table-sm">
+            <thead><tr><th>路径</th><th>状态码</th><th>大小</th></tr></thead><tbody>`;
+        dirs.slice(0, 30).forEach(d => {
+            webHtml += `<tr><td>${d.path}</td><td><span class="badge bg-${d.status===200?'success':d.status===403?'warning':'info'}">${d.status}</span></td><td>${d.size||'-'}</td></tr>`;
+        });
+        webHtml += '</tbody></table></div>';
+        if (dirs.length > 30) webHtml += `<small class="text-muted">...还有 ${dirs.length-30} 条</small>`;
+    }
+    
+    // 参数
+    const params = web.parameters || [];
+    if (params.length > 0) {
+        webHtml += `<h6>发现的参数 (${params.length})</h6><div class="d-flex flex-wrap gap-1">`;
+        params.forEach(p => webHtml += `<span class="badge bg-secondary">${p}</span>`);
+        webHtml += '</div>';
+    }
+    
+    if (!webHtml) webHtml = '<p class="text-muted">未发现Web服务</p>';
+    document.getElementById('webResults').innerHTML = webHtml;
+    
+    // 漏洞标签页
+    const vulnDetails = intel.vulnerabilities?.details || [];
+    let vulnHtml = '';
+    if (vulnDetails.length > 0) {
+        vulnHtml = `<div class="table-responsive"><table class="table table-sm">
+            <thead><tr><th>来源</th><th>严重度</th><th>名称/脚本</th><th>详情</th></tr></thead><tbody>`;
+        vulnDetails.forEach(v => {
+            const sevClass = v.severity==='critical'?'danger':v.severity==='high'?'warning':v.severity==='medium'?'info':'secondary';
+            vulnHtml += `<tr>
+                <td><span class="badge bg-dark">${v.source||'-'}</span></td>
+                <td><span class="badge bg-${sevClass}">${v.severity}</span></td>
+                <td>${v.name || v.script || v.template_id || '-'}</td>
+                <td><small>${(v.output || v.description || v.matched_at || '').substring(0, 120)}</small></td>
+            </tr>`;
+        });
+        vulnHtml += '</tbody></table></div>';
+    } else {
+        vulnHtml = '<p class="text-muted">未发现漏洞</p>';
+    }
+    document.getElementById('vulnResults').innerHTML = vulnHtml;
+}
+
+// ========== 决策结果展示 ==========
+function displayDecisionResults(decision) {
+    if (!decision) return;
+
+    // 缓存决策数据供状态保存使用
+    window._lastDecisionData = decision;
+    // 缓存攻击链步骤数据，避免 onclick 中的 JSON 引号问题
+    window._chainStepsData = {};
+
+    document.getElementById('decisionCard').style.display = '';
+    document.getElementById('suggestionsCard').style.display = 'none';
+
+    const summary = decision.analysis_summary || {};
+    const chains = decision.viable_chains || [];
+    const recommended = decision.recommended_chain;
+
+    // 预先存储各链步骤
+    chains.forEach(chain => {
+        window._chainStepsData[chain.chain_id] = chain.steps || [];
+    });
+
+    let html = `
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <div class="border rounded p-3 text-center">
+                    <span class="risk-badge badge bg-${getRiskBadge(summary.risk_level)}">${summary.risk_level || '未知'}</span>
+                    <div class="mt-1"><small>风险等级 (${summary.risk_score || 0}/100)</small></div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="border rounded p-3 text-center">
+                    <h4>${summary.total_vulnerabilities || 0}</h4>
+                    <small>总漏洞数 (严重+高危: ${summary.critical_high_vulns || 0})</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="border rounded p-3 text-center">
+                    <h4>${chains.length}</h4>
+                    <small>可行攻击链</small>
+                </div>
+            </div>
+        </div>
+        <h6><i class="fas fa-trophy text-warning"></i> 攻击链排名</h6>
+    `;
+
+    chains.forEach((chain, idx) => {
+        const isRec = recommended && chain.chain_id === recommended.chain_id;
+        html += `
+            <div class="card mb-2 chain-card ${isRec ? 'recommended' : ''}">
+                <div class="card-body py-2 px-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>#${idx + 1} ${chain.name}</strong>
+                            ${isRec ? '<span class="badge bg-success ms-2">推荐</span>' : ''}
+                            <br><small class="text-muted">${chain.description}</small>
+                        </div>
+                        <div class="text-end">
+                            <h4 class="mb-0 ${chain.total_score >= 60 ? 'text-success' : chain.total_score >= 40 ? 'text-warning' : 'text-danger'}">${chain.total_score}</h4>
+                            <small>综合得分</small>
+                        </div>
+                    </div>
+                    <div class="row mt-2 small">
+                        ${renderScoreBar('成功率', chain.scores.success_rate, '40%')}
+                        ${renderScoreBar('隐蔽性', chain.scores.stealth, '25%')}
+                        ${renderScoreBar('时间效率', chain.scores.time_cost, '20%')}
+                        ${renderScoreBar('资源效率', chain.scores.resource, '15%')}
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">预计时间: ${chain.estimated_time} | 步骤: ${chain.steps.length}步</small>
+                        <button class="btn btn-sm btn-outline-primary float-end"
+                                onclick="showChainSteps('${chain.chain_id}')">
+                            <i class="fas fa-list-ol"></i> 查看步骤
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    document.getElementById('decisionResults').innerHTML = html;
+}
+
+function renderScoreBar(label, scoreObj, weight) {
+    const score = scoreObj?.score || 0;
+    const color = score >= 70 ? '#28a745' : score >= 40 ? '#ffc107' : '#dc3545';
+    return `<div class="col-3">
+        <div class="d-flex justify-content-between"><span>${label}</span><span>${score}</span></div>
+        <div class="score-bar"><div class="score-bar-fill" style="width:${score}%;background:${color}"></div></div>
+        <div class="text-muted" style="font-size:0.7rem">权重${weight}</div>
+    </div>`;
+}
+
+function showChainSteps(chainId) {
+    const steps = (window._chainStepsData || {})[chainId] || [];
+    let stepsHtml = '<ol>';
+    steps.forEach(s => stepsHtml += `<li>${s}</li>`);
+    stepsHtml += '</ol>';
+
+    // 根据攻击链类型提供跳转按钮
+    let actionBtn = '';
+    if (chainId === 'phishing') {
+        actionBtn = `<a href="/phishing" class="btn btn-success"><i class="fas fa-fish"></i> 前往钓鱼攻击</a>`;
+    } else if (chainId === 'file_upload') {
+        actionBtn = `<a href="/file-upload" class="btn btn-warning"><i class="fas fa-upload"></i> 前往文件上传攻击</a>`;
+    } else if (chainId === 'sql_injection') {
+        actionBtn = `<a href="/sqli" class="btn btn-danger"><i class="fas fa-database"></i> 前往SQL注入</a>`;
+    }
+
+    // 移除旧的步骤展开区（如果已存在）
+    const oldDetail = document.getElementById('chain-steps-' + chainId);
+    if (oldDetail) { oldDetail.remove(); return; }
+
+    document.getElementById('decisionResults').insertAdjacentHTML('beforeend', `
+        <div class="alert alert-info mt-2" id="chain-steps-${chainId}">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0"><i class="fas fa-list-ol"></i> ${chainId} 执行步骤</h6>
+                <button class="btn btn-sm btn-outline-secondary" onclick="document.getElementById('chain-steps-${chainId}').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            ${stepsHtml}
+            ${actionBtn}
+        </div>
+    `);
+}
+
+// ========== 兼容旧版简单扫描结果 ==========
+function displayScanResults(data) {
+    const resultsDiv = document.getElementById('scanResults');
+    const suggestionsDiv = document.getElementById('attackSuggestions');
+
+    // 重置UI状态：确保普通扫描的卡片可见，综合扫描的标签页隐藏
+    document.getElementById('resultTabs').style.display = 'none';
+    document.getElementById('decisionCard').style.display = 'none';
+    document.getElementById('suggestionsCard').style.display = '';
+    document.getElementById('btnAnalyze').style.display = 'none';
+
+    if (data.error || data.results?.error) {
+        resultsDiv.innerHTML = `<div class="alert alert-danger"><h6>扫描错误</h6><p>${data.error || data.results?.error}</p></div>`;
+        suggestionsDiv.innerHTML = '<p class="text-muted text-center">扫描出错，无法生成建议</p>';
+        return;
+    }
+
+    let resultsHtml = `<div class="alert alert-success"><h6><i class="fas fa-check-circle"></i> 扫描完成</h6>
+        <p class="mb-0">目标: ${data.target || '-'} | 类型: ${data.scan_type || '-'}</p></div>`;
+
+    const rawResults = data.results || {};
+    const scanType = rawResults.scan_type || data.scan_type || '';
+
+    // 从不同扫描类型的嵌套结构中提取服务和漏洞信息
+    let services = [];
+    let vulnerabilities = [];
+    let openPorts = [];
+    let webData = null;
+
+    if (rawResults.data) {
+        // full 扫描: {success, scan_type:"full", data:{host_discovery:{open_ports,...}, service_fingerprint:{services,...}}}
+        if (scanType === 'full') {
+            services = rawResults.data.service_fingerprint?.services || [];
+            vulnerabilities = rawResults.data.service_fingerprint?.vulnerabilities || [];
+            openPorts = rawResults.data.host_discovery?.open_ports || [];
+        } else if (scanType === 'quick') {
+            // quick 扫描: {success, scan_type:"quick", data:{alive, open_ports:[{port,protocol}],...}}
+            openPorts = rawResults.data.open_ports || [];
+        } else {
+            // 其他带 data 字段的结构
+            services = rawResults.data.services || [];
+            vulnerabilities = rawResults.data.vulnerabilities || [];
+        }
+    } else if (rawResults.web_services !== undefined) {
+        // web_recon 扫描: {phase:"web_recon", web_services, directories, tech_stack, parameters}
+        webData = rawResults;
+    } else {
+        // vuln 扫描等平铺结构: {target, services, vulnerabilities, scan_type, ...}
+        services = rawResults.services || [];
+        vulnerabilities = rawResults.vulnerabilities || [];
+    }
+
+    // 显示开放端口（快速扫描）
+    if (openPorts.length > 0 && services.length === 0) {
+        resultsHtml += `<h6 class="mt-3">开放端口 (${openPorts.length})</h6>
+            <div class="table-responsive"><table class="table table-sm table-striped">
+            <thead><tr><th>端口</th><th>协议</th></tr></thead><tbody>`;
+        openPorts.forEach(p => {
+            resultsHtml += `<tr><td><strong>${p.port}</strong></td><td>${p.protocol || 'tcp'}</td></tr>`;
+        });
+        resultsHtml += '</tbody></table></div>';
+    }
+
+    // 显示服务列表
+    if (services.length > 0) {
+        resultsHtml += `<h6 class="mt-3">发现的服务 (${services.length})</h6>
+            <div class="table-responsive"><table class="table table-sm table-striped">
+            <thead><tr><th>端口</th><th>协议</th><th>状态</th><th>服务</th><th>版本</th></tr></thead><tbody>`;
+        services.forEach(s => {
+            resultsHtml += `<tr>
+                <td><strong>${s.port}</strong></td><td>${s.protocol || 'tcp'}</td>
+                <td><span class="badge ${s.state === 'open' ? 'bg-success' : 'bg-secondary'}">${s.state || 'unknown'}</span></td>
+                <td>${s.service || 'unknown'}</td><td>${s.version || '-'}</td>
+            </tr>`;
+        });
+        resultsHtml += '</tbody></table></div>';
+    }
+
+    // 显示漏洞列表
+    if (vulnerabilities.length > 0) {
+        resultsHtml += `<h6 class="mt-3">发现的漏洞 (${vulnerabilities.length})</h6>
+            <div class="table-responsive"><table class="table table-sm table-warning">
+            <thead><tr><th>端口</th><th>漏洞</th><th>详情</th></tr></thead><tbody>`;
+        vulnerabilities.forEach(v => {
+            resultsHtml += `<tr>
+                <td>${v.port || '-'}</td>
+                <td>${v.script_id || v.name || '-'}</td>
+                <td><small>${(v.output || v.description || '').substring(0, 120)}</small></td>
+            </tr>`;
+        });
+        resultsHtml += '</tbody></table></div>';
+    }
+
+    // 显示Web侦察数据
+    if (webData) {
+        const dirs = webData.directories || [];
+        if (dirs.length > 0) {
+            resultsHtml += `<h6 class="mt-3">发现的目录/文件 (${dirs.length})</h6>
+                <div class="table-responsive"><table class="table table-sm">
+                <thead><tr><th>路径</th><th>状态码</th><th>大小</th></tr></thead><tbody>`;
+            dirs.slice(0, 30).forEach(d => {
+                const sc = d.status === 200 ? 'success' : d.status === 403 ? 'warning' : 'info';
+                resultsHtml += `<tr>
+                    <td>${d.path}</td>
+                    <td><span class="badge bg-${sc}">${d.status}</span></td>
+                    <td>${d.size || '-'}</td>
+                </tr>`;
+            });
+            resultsHtml += '</tbody></table></div>';
+            if (dirs.length > 30) resultsHtml += `<small class="text-muted">...还有 ${dirs.length - 30} 条</small>`;
+        }
+        const tech = webData.tech_stack || {};
+        const allTech = [...(tech.servers || []), ...(tech.cms || []), ...(tech.frameworks || []), ...(tech.languages || [])];
+        if (allTech.length > 0) {
+            resultsHtml += `<h6 class="mt-3">技术栈</h6><div class="d-flex flex-wrap gap-2 mb-2">`;
+            allTech.forEach(t => resultsHtml += `<span class="badge bg-primary">${t}</span>`);
+            resultsHtml += '</div>';
+        }
+        const params = webData.parameters || [];
+        if (params.length > 0) {
+            resultsHtml += `<h6 class="mt-2">发现的参数 (${params.length})</h6><div class="d-flex flex-wrap gap-1">`;
+            params.forEach(p => resultsHtml += `<span class="badge bg-secondary">${p}</span>`);
+            resultsHtml += '</div>';
+        }
+    }
+
+    if (!services.length && !openPorts.length && !webData && !vulnerabilities.length) {
+        resultsHtml += '<p class="text-muted mt-3">未获取到详细扫描数据，建议使用综合扫描获取完整情报。</p>';
+    }
+
+    resultsDiv.innerHTML = resultsHtml;
+
+    // 生成攻击建议（使用标准化结构）
+    generateAttackSuggestions({ services, vulnerabilities, openPorts, webData }, suggestionsDiv);
+}
+
+function generateAttackSuggestions(scanResults, suggestionsDiv) {
+    let html = '<div class="list-group">';
+    const services = scanResults.services || [];
+    const vulns = scanResults.vulnerabilities || [];
+    const webData = scanResults.webData || null;
+    const openPorts = scanResults.openPorts || [];
+
+    // 判断是否存在Web服务
+    const webPortSet = new Set(['80','443','8080','8443','8000','8888']);
+    const webServices = services.filter(s =>
+        s.port && webPortSet.has(s.port.toString()) && s.state === 'open'
+    );
+    const hasWeb = webServices.length > 0 || webData !== null;
+
+    // 判断是否有可暴破服务
+    const bruteServices = ['ssh','ftp','telnet','rdp','smb','mysql','mssql','postgresql'];
+    const hasBrute = services.some(s => bruteServices.includes((s.service || '').toLowerCase()) && s.state === 'open');
+
+    let hasSuggestion = false;
+
+    if (hasWeb) {
+        hasSuggestion = true;
+        html += `<div class="list-group-item list-group-item-success">
+            <h6><i class="fas fa-globe"></i> Web服务发现</h6>
+            <p class="mb-2">发现Web服务，推荐以下攻击方式：</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="/phishing" class="btn btn-success btn-sm"><i class="fas fa-fish"></i> 钓鱼攻击</a>
+                <a href="/file-upload" class="btn btn-warning btn-sm"><i class="fas fa-upload"></i> 文件上传攻击</a>
+                <a href="/sqli" class="btn btn-danger btn-sm"><i class="fas fa-database"></i> SQL注入检测</a>
+                <button class="btn btn-primary btn-sm" onclick="startComprehensiveFromSuggestion()">
+                    <i class="fas fa-brain"></i> 综合扫描+智能决策
+                </button>
+            </div>
+        </div>`;
+    }
+
+    if (vulns.length > 0) {
+        hasSuggestion = true;
+        html += `<div class="list-group-item list-group-item-danger">
+            <h6><i class="fas fa-bug"></i> 发现 ${vulns.length} 个漏洞</h6>
+            <p class="mb-2">建议执行综合扫描获取智能决策推荐的攻击链。</p>
+            <button class="btn btn-danger btn-sm" onclick="startComprehensiveFromSuggestion()">
+                <i class="fas fa-brain"></i> 综合扫描+智能决策
+            </button>
+        </div>`;
+    }
+
+    if (hasBrute) {
+        hasSuggestion = true;
+        html += `<div class="list-group-item list-group-item-warning">
+            <h6><i class="fas fa-key"></i> 可暴破服务发现</h6>
+            <p class="mb-2">发现 SSH/FTP/RDP 等服务，可尝试凭据爆破或社会工程学攻击。</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="/phishing" class="btn btn-warning btn-sm"><i class="fas fa-fish"></i> 社工钓鱼攻击</a>
+                <button class="btn btn-primary btn-sm" onclick="startComprehensiveFromSuggestion()">
+                    <i class="fas fa-brain"></i> 智能决策分析
+                </button>
+            </div>
+        </div>`;
+    }
+
+    if (!hasSuggestion) {
+        html += `<div class="list-group-item list-group-item-info">
+            <h6><i class="fas fa-info-circle"></i> 通用建议</h6>
+            <p class="mb-2">未发现明显可利用服务，推荐使用社会工程学攻击或执行综合扫描获取深度情报。</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="/phishing" class="btn btn-info btn-sm"><i class="fas fa-fish"></i> 启动钓鱼攻击</a>
+                <button class="btn btn-primary btn-sm" onclick="startComprehensiveFromSuggestion()">
+                    <i class="fas fa-search"></i> 执行综合扫描
+                </button>
+            </div>
+        </div>`;
+    }
+
+    html += '</div>';
+    suggestionsDiv.innerHTML = html;
+}
+
+function startComprehensiveFromSuggestion() {
+    const target = document.getElementById('target').value;
+    if (!target) { alert('请先在上方输入目标地址'); return; }
+    document.getElementById('scanType').value = 'comprehensive';
+    document.getElementById('scanTypeDesc').textContent = scanTypeDescs['comprehensive'] || '';
+    startComprehensiveScan(target);
+}
+
+// ========== 辅助函数 ==========
+function getRiskColor(score) {
+    if (score >= 80) return 'text-danger';
+    if (score >= 60) return 'text-warning';
+    if (score >= 40) return 'text-info';
+    return 'text-success';
+}
+
+function getRiskBadge(level) {
+    const map = {'极高':'danger','高':'warning','中':'info','低':'success','极低':'secondary'};
+    return map[level] || 'secondary';
+}
+
+function updateProgress(percent, text) {
+    document.getElementById('scanProgressBar').style.width = percent + '%';
+    document.getElementById('scanProgressText').textContent = text;
+}
+
+function updateModalProgress(percent, text) {
+    document.getElementById('modalProgressBar').style.width = percent + '%';
+    document.getElementById('modalProgressText').textContent = text;
+}
+
+function simulateModalProgress() {
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.random() * 10;
+        if (progress >= 90) clearInterval(interval);
+        else updateModalProgress(progress, `扫描中... ${Math.round(progress)}%`);
+    }, 500);
+}
+
+function resetProgressSteps() {
+    ['host','service','web','vuln','intel'].forEach(s => {
+        document.getElementById('step-' + s).innerHTML = '<i class="fas fa-circle text-muted"></i> ' + getStepName(s);
+    });
+}
+
+function completeAllSteps() {
+    // 清除动画定时器，防止覆盖完成状态
+    if (_animateInterval) {
+        clearInterval(_animateInterval);
+        _animateInterval = null;
+    }
+    ['host','service','web','vuln','intel'].forEach(s => {
+        document.getElementById('step-' + s).innerHTML = '<i class="fas fa-check-circle text-success"></i> ' + getStepName(s);
+    });
+}
+
+function animateSteps() {
+    // 清除已有定时器，防止重复启动
+    if (_animateInterval) {
+        clearInterval(_animateInterval);
+        _animateInterval = null;
+    }
+    const steps = ['host','service','web','vuln','intel'];
+    let idx = 0;
+    _animateInterval = setInterval(() => {
+        if (idx < steps.length) {
+            document.getElementById('step-' + steps[idx]).innerHTML = '<i class="fas fa-spinner fa-spin text-primary"></i> ' + getStepName(steps[idx]);
+            updateProgress((idx+1)*20, '正在执行: ' + getStepName(steps[idx]) + '...');
+            idx++;
+        } else {
+            clearInterval(_animateInterval);
+            _animateInterval = null;
+        }
+    }, 2000);
+}
+
+function getStepName(step) {
+    const names = {host:'主机与端口发现',service:'服务指纹识别',web:'Web应用侦察',vuln:'漏洞扫描',intel:'情报汇总'};
+    return names[step] || step;
+}
+
+function addToHistory(target, scanType, results) {
+    const historyDiv = document.getElementById('scanHistory');
+
+    // 从各种可能的嵌套结构中提取服务数量
+    let serviceCount = 0;
+    if (results.intelligence?.services?.length) {
+        serviceCount = results.intelligence.services.length;
+    } else if (results.results?.data?.service_fingerprint?.services?.length) {
+        serviceCount = results.results.data.service_fingerprint.services.length;
+    } else if (results.results?.data?.open_ports?.length) {
+        serviceCount = results.results.data.open_ports.length; // quick scan
+    } else if (results.results?.services?.length) {
+        serviceCount = results.results.services.length;
+    } else if (results.services?.length) {
+        serviceCount = results.services.length;
+    }
+
+    // 从各种可能的嵌套结构中提取漏洞数量
+    let vulnCount = 0;
+    if (results.intelligence?.vulnerabilities?.total) {
+        vulnCount = results.intelligence.vulnerabilities.total;
+    } else if (results.vulnerabilities?.total) {
+        vulnCount = results.vulnerabilities.total;
+    } else if (results.results?.data?.service_fingerprint?.vulnerabilities?.length) {
+        vulnCount = results.results.data.service_fingerprint.vulnerabilities.length;
+    } else if (results.results?.vulnerabilities?.length) {
+        vulnCount = results.results.vulnerabilities.length;
+    }
+
+    const timestamp = new Date().toLocaleString();
+
+    let item = '<div class="list-group-item">' +
+        '<div class="d-flex w-100 justify-content-between">' +
+        '<h6 class="mb-1">' + target + '</h6><small>' + timestamp + '</small></div>' +
+        '<p class="mb-1">类型: ' + scanType + ' | 服务/端口: ' + serviceCount + ' | 漏洞: ' + vulnCount + '</p>' +
+        '<small class="text-muted">已记录</small></div>';
+
+    if (historyDiv.innerHTML.includes('暂无扫描记录')) {
+        historyDiv.innerHTML = '<div class="list-group">' + item + '</div>';
+    } else {
+        const listGroup = historyDiv.querySelector('.list-group');
+        if (listGroup) listGroup.insertAdjacentHTML('afterbegin', item);
+    }
+}
+
+function showError(err) {
+    alert('错误: ' + (err.message || err));
+    console.error(err);
+}
+</script>
+{% endblock %}

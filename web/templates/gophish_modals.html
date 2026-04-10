@@ -1,0 +1,222 @@
+<!-- 创建用户组模态框 -->
+<div class="modal fade" id="createGroupModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">创建用户组</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createGroupForm">
+                    <div class="mb-3">
+                        <label class="form-label">组名称</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">目标用户</label>
+                        <textarea class="form-control" name="targets" rows="6" 
+                                  placeholder="每行一个邮箱地址，格式：姓名 &lt;邮箱&gt;&#10;例如：&#10;张三 &lt;zhangsan@example.com&gt;&#10;李四 &lt;lisi@example.com&gt;"></textarea>
+                        <div class="form-text">每行输入一个目标用户，格式为：姓名 &lt;邮箱地址&gt;</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="createGroup()">创建</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 创建邮件模板模态框 -->
+<div class="modal fade" id="createTemplateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">创建邮件模板</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createTemplateForm">
+                    <div class="mb-3">
+                        <label class="form-label">模板名称</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">邮件主题</label>
+                        <input type="text" class="form-control" name="subject" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">发件人</label>
+                        <input type="text" class="form-control" name="from_address" placeholder="例如：IT部门 &lt;it@company.com&gt;" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">邮件内容 (HTML)</label>
+                        <textarea class="form-control" name="html" rows="10" required></textarea>
+                        <div class="form-text">使用 <code>&#123;&#123;.URL&#125;&#125;</code> 作为钓鱼链接占位符</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="createTemplate()">创建</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 创建钓鱼页面模态框 -->
+<div class="modal fade" id="createPageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">创建钓鱼页面</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createPageForm">
+                    <div class="mb-3">
+                        <label class="form-label">页面名称</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">HTML内容</label>
+                        <textarea class="form-control" name="html" rows="12" required></textarea>
+                        <div class="form-text">可以包含表单来收集用户凭据</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">捕获提交的数据</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="capture_credentials" checked>
+                            <label class="form-check-label">捕获用户名和密码</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="capture_passwords">
+                            <label class="form-check-label">捕获密码</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="createPage()">创建</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 创建发送配置模态框 -->
+<div class="modal fade" id="createProfileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">创建发送配置</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createProfileForm">
+                    <div class="mb-3">
+                        <label class="form-label">配置名称</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">SMTP主机</label>
+                        <input type="text" class="form-control" name="host" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">SMTP端口</label>
+                        <input type="number" class="form-control" name="port" value="587" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">用户名</label>
+                        <input type="text" class="form-control" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">密码</label>
+                        <input type="password" class="form-control" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">发件人地址</label>
+                        <input type="email" class="form-control" name="from_address" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="createProfile()">创建</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 创建活动模态框 -->
+<div class="modal fade" id="createCampaignModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">创建钓鱼活动</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createCampaignForm">
+                    <div class="mb-3">
+                        <label class="form-label">活动名称</label>
+                        <input type="text" class="form-control" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">目标用户组</label>
+                        <select class="form-control" name="groups" id="campaignGroups" required>
+                            <option value="">选择用户组...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">邮件模板</label>
+                        <select class="form-control" name="template" id="campaignTemplates" required>
+                            <option value="">选择邮件模板...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">钓鱼页面</label>
+                        <select class="form-control" name="page" id="campaignPages" required>
+                            <option value="">选择钓鱼页面...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">发送配置</label>
+                        <select class="form-control" name="profile" id="campaignProfiles" required>
+                            <option value="">选择发送配置...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">URL</label>
+                        <input type="url" class="form-control" name="url" placeholder="https://your-phishing-domain.com" required>
+                        <div class="form-text">钓鱼页面的访问URL</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="createCampaign()">创建</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmDeleteMessage">确定要删除这个项目吗？</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">删除</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,86 @@
+{
+  "target": "192.168.25.140",
+  "scan_type": "web",
+  "timestamp": 1770739369.4160964,
+  "tools_status": {
+    "nmap": true,
+    "ffuf": true,
+    "nuclei": true
+  },
+  "phases": {
+    "web_recon": {
+      "success": true,
+      "results": {
+        "web_services": [
+          {
+            "port": "80",
+            "protocol": "tcp",
+            "state": "open",
+            "service": "http",
+            "version": "",
+            "product": "",
+            "extrainfo": ""
+          }
+        ],
+        "reconnaissance": {
+          "80": {
+            "url": "http://192.168.25.140:80",
+            "service_info": {
+              "port": "80",
+              "protocol": "tcp",
+              "state": "open",
+              "service": "http",
+              "version": "",
+              "product": "",
+              "extrainfo": ""
+            },
+            "technology_stack": {
+              "success": true,
+              "url": "http://192.168.25.140:80",
+              "technology_stack": {
+                "cms": [],
+                "frameworks": [],
+                "servers": [
+                  "Apache"
+                ],
+                "languages": [],
+                "other": []
+              },
+              "raw_output": "\u001b[1m\u001b[34mhttp://192.168.25.140:80\u001b[0m [200 OK] \u001b[1mApache\u001b[0m[\u001b[1m\u001b[32m2.2.8\u001b[0m], \u001b[1mCountry\u001b[0m[\u001b[0m\u001b[22mRESERVED\u001b[0m][\u001b[1m\u001b[31mZZ\u001b[0m], \u001b[1mHTTPServer\u001b[0m[\u001b[1m\u001b[31mUbuntu Linux\u001b[0m][\u001b[1m\u001b[36mApache/2.2.8 (Ubuntu) DAV/2\u001b[0m], \u001b[1mIP\u001b[0m[\u001b[0m\u001b[22m192.168.25.140\u001b[0m], \u001b[1mPHP\u001b[0m[\u001b[1m\u001b[32m5,5.2.4-2ubuntu5.10\u001b[0m], \u001b[1mTitle\u001b[0m[\u001b[1m\u001b[33mMetasploitable2 - Linux\u001b[0m], \u001b[1mWebDAV\u001b[0m[\u001b[1m\u001b[32m2\u001b[0m], \u001b[1mX-Powered-By\u001b[0m[\u001b[0m\u001b[22mPHP/5.2.4-2ubuntu5.10\u001b[0m]\n"
+            },
+            "directory_scan": {
+              "success": false,
+              "error": "Encountered error(s): 1 errors occured.\n\t* stat /usr/share/wordlists/dirb/common.txt: no such file or directory\n\nEncountered error(s): 1 errors occured.\n\t* stat /usr/share/wordlists/dirb/common.txt: no such file or directory\n\n"
+            },
+            "vulnerabilities": {
+              "success": false,
+              "error": ""
+            },
+            "parameters": null
+          }
+        }
+      },
+      "web_service_count": 1
+    },
+    "vulnerability_scan": {
+      "success": false,
+      "error": ""
+    }
+  },
+  "summary": {
+    "target": "192.168.25.140",
+    "scan_type": "web",
+    "timestamp": 1770739369.4160964,
+    "phases_completed": [
+      "web_recon",
+      "vulnerability_scan"
+    ],
+    "risk_level": "low",
+    "recommended_attacks": [
+      "\u9493\u9c7c\u653b\u51fb"
+    ],
+    "vulnerability_count": 0,
+    "service_count": 0,
+    "web_services": 0
+  }
+}

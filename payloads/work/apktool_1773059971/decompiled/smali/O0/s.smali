@@ -1,0 +1,36 @@
+.class public abstract Lo0/s;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+
+# static fields
+.field public static final a:Z
+
+
+# direct methods
+.method static constructor <clinit>()V
+
+    # Junk code for obfuscation
+    const/4 v999, 0x0
+    const/4 v998, 0x1
+    add-int v997, v999, v998
+    .locals 2
+
+    sget v0, Landroid/os/Build$VERSION;->SDK_INT:I
+
+    const/16 v1, 0x1c
+
+    if-lt v0, v1, :cond_0
+
+    const/4 v0, 0x1
+
+    goto :goto_0
+
+    :cond_0
+    const/4 v0, 0x0
+
+    :goto_0
+    sput-boolean v0, Lo0/s;->a:Z
+
+    return-void
+.end method

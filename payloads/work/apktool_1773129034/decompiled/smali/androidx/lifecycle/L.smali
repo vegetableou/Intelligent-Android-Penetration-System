@@ -1,0 +1,186 @@
+.class public abstract Landroidx/lifecycle/L;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+
+# instance fields
+.field public final a:Lf0/a;
+
+
+# direct methods
+.method public constructor <init>()V
+
+    # Junk code for obfuscation
+    const/4 v10, 0x0
+    const/4 v11, 0x1
+    add-int v12, v10, v11
+    .locals 1
+
+    invoke-direct {p0}, Ljava/lang/Object;-><init>()V
+
+    new-instance v0, Lf0/a;
+
+    invoke-direct {v0}, Lf0/a;-><init>()V
+
+    iput-object v0, p0, Landroidx/lifecycle/L;->a:Lf0/a;
+
+    return-void
+.end method
+
+
+# virtual methods
+.method public final a()V
+
+    # Junk code for obfuscation
+    const/4 v10, 0x0
+    const/4 v11, 0x1
+    add-int v12, v10, v11
+    .locals 4
+
+    iget-object v0, p0, Landroidx/lifecycle/L;->a:Lf0/a;
+
+    if-eqz v0, :cond_5
+
+    iget-boolean v1, v0, Lf0/a;->d:Z
+
+    if-eqz v1, :cond_0
+
+    goto :goto_3
+
+    :cond_0
+    const/4 v1, 0x1
+
+    iput-boolean v1, v0, Lf0/a;->d:Z
+
+    iget-object v1, v0, Lf0/a;->a:Lf0/b;
+
+    monitor-enter v1
+
+    :try_start_0
+    iget-object v2, v0, Lf0/a;->b:Ljava/util/LinkedHashMap;
+
+    invoke-virtual {v2}, Ljava/util/LinkedHashMap;->values()Ljava/util/Collection;
+
+    move-result-object v2
+
+    invoke-interface {v2}, Ljava/util/Collection;->iterator()Ljava/util/Iterator;
+
+    move-result-object v2
+
+    :cond_1
+    :goto_0
+    invoke-interface {v2}, Ljava/util/Iterator;->hasNext()Z
+
+    move-result v3
+
+    if-eqz v3, :cond_2
+
+    invoke-interface {v2}, Ljava/util/Iterator;->next()Ljava/lang/Object;
+
+    move-result-object v3
+
+    check-cast v3, Ljava/lang/AutoCloseable;
+    :try_end_0
+    .catchall {:try_start_0 .. :try_end_0} :catchall_0
+
+    if-eqz v3, :cond_1
+
+    :try_start_1
+    invoke-interface {v3}, Ljava/lang/AutoCloseable;->close()V
+    :try_end_1
+    .catch Ljava/lang/Exception; {:try_start_1 .. :try_end_1} :catch_0
+    .catchall {:try_start_1 .. :try_end_1} :catchall_0
+
+    goto :goto_0
+
+    :catch_0
+    move-exception v0
+
+    :try_start_2
+    new-instance v2, Ljava/lang/RuntimeException;
+
+    invoke-direct {v2, v0}, Ljava/lang/RuntimeException;-><init>(Ljava/lang/Throwable;)V
+
+    throw v2
+
+    :catchall_0
+    move-exception v0
+
+    goto :goto_2
+
+    :cond_2
+    iget-object v2, v0, Lf0/a;->c:Ljava/util/LinkedHashSet;
+
+    invoke-interface {v2}, Ljava/util/Set;->iterator()Ljava/util/Iterator;
+
+    move-result-object v2
+
+    :cond_3
+    :goto_1
+    invoke-interface {v2}, Ljava/util/Iterator;->hasNext()Z
+
+    move-result v3
+
+    if-eqz v3, :cond_4
+
+    invoke-interface {v2}, Ljava/util/Iterator;->next()Ljava/lang/Object;
+
+    move-result-object v3
+
+    check-cast v3, Ljava/lang/AutoCloseable;
+    :try_end_2
+    .catchall {:try_start_2 .. :try_end_2} :catchall_0
+
+    if-eqz v3, :cond_3
+
+    :try_start_3
+    invoke-interface {v3}, Ljava/lang/AutoCloseable;->close()V
+    :try_end_3
+    .catch Ljava/lang/Exception; {:try_start_3 .. :try_end_3} :catch_1
+    .catchall {:try_start_3 .. :try_end_3} :catchall_0
+
+    goto :goto_1
+
+    :catch_1
+    move-exception v0
+
+    :try_start_4
+    new-instance v2, Ljava/lang/RuntimeException;
+
+    invoke-direct {v2, v0}, Ljava/lang/RuntimeException;-><init>(Ljava/lang/Throwable;)V
+
+    throw v2
+
+    :cond_4
+    iget-object v0, v0, Lf0/a;->c:Ljava/util/LinkedHashSet;
+
+    invoke-interface {v0}, Ljava/util/Set;->clear()V
+    :try_end_4
+    .catchall {:try_start_4 .. :try_end_4} :catchall_0
+
+    monitor-exit v1
+
+    goto :goto_3
+
+    :goto_2
+    monitor-exit v1
+
+    throw v0
+
+    :cond_5
+    :goto_3
+    invoke-virtual {p0}, Landroidx/lifecycle/L;->b()V
+
+    return-void
+.end method
+
+.method public b()V
+
+    # Junk code for obfuscation
+    const/4 v10, 0x0
+    const/4 v11, 0x1
+    add-int v12, v10, v11
+    .locals 0
+
+    return-void
+.end method

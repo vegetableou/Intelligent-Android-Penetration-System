@@ -1,0 +1,749 @@
+
+<!-- web/templates/sqli.html -->
+{% extends "base.html" %}
+
+{% block title %}SQL注入攻击 - Android自动化渗透测试框架{% endblock %}
+
+{% block content %}
+<!-- 配置状态提示 -->
+<div id="sqliConfigAlert" class="alert alert-warning" style="display: none;">
+    <i class="fas fa-exclamation-triangle"></i> 系统未初始化，请先到<a href="{{ url_for('dashboard') }}">控制面板</a>设置LHOST
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <h1><i class="fas fa-database"></i> SQL注入攻击</h1>
+        <p class="text-muted">检测并利用SQL注入漏洞，支持手动测试和sqlmap自动化扫描</p>
+    </div>
+</div>
+
+<!-- 功能标签页 -->
+<ul class="nav nav-tabs mt-3" id="sqliTabs" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link active" id="detect-tab" data-bs-toggle="tab" href="#detectPanel" role="tab">
+            <i class="fas fa-search"></i> 注入点检测
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="sqlmap-tab" data-bs-toggle="tab" href="#sqlmapPanel" role="tab">
+            <i class="fas fa-robot"></i> sqlmap自动化
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="manual-tab" data-bs-toggle="tab" href="#manualPanel" role="tab">
+            <i class="fas fa-terminal"></i> 手动测试
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="extract-tab" data-bs-toggle="tab" href="#extractPanel" role="tab">
+            <i class="fas fa-download"></i> 数据提取
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content mt-3" id="sqliTabContent">
+
+    <!-- ==================== 注入点检测 ==================== -->
+    <div class="tab-pane fade show active" id="detectPanel" role="tabpanel">
+        <div class="row">
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0"><i class="fas fa-crosshairs"></i> 检测配置</h5></div>
+                    <div class="card-body">
+                        <form id="detectForm">
+                            <div class="mb-3">
+                                <label for="detectUrl" class="form-label">目标URL</label>
+                                <input type="url" class="form-control" id="detectUrl"
+                                       placeholder="http://target.com/page?id=1" required>
+                                <div class="form-text">URL中需包含可测试的参数</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="detectMethod" class="form-label">请求方法</label>
+                                <select class="form-select" id="detectMethod">
+                                    <option value="GET" selected>GET</option>
+                                    <option value="POST">POST</option>
+                                </select>
+                            </div>
+                            <div class="mb-3" id="detectPostDataGroup" style="display:none;">
+                                <label for="detectPostData" class="form-label">POST数据</label>
+                                <textarea class="form-control" id="detectPostData" rows="2"
+                                          placeholder='{"username":"admin","password":"test"}'></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="detectCookie" class="form-label">Cookie (可选)</label>
+                                <input type="text" class="form-control" id="detectCookie"
+                                       placeholder="PHPSESSID=abc123">
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-search"></i> 开始检测
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0"><i class="fas fa-chart-bar"></i> 检测结果</h5></div>
+                    <div class="card-body">
+                        <div id="detectResults">
+                            <p class="text-muted text-center">等待检测...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== sqlmap自动化 ==================== -->
+    <div class="tab-pane fade" id="sqlmapPanel" role="tabpanel">
+        <div class="row">
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0"><i class="fas fa-robot"></i> sqlmap配置</h5></div>
+                    <div class="card-body">
+                        <form id="sqlmapForm">
+                            <div class="mb-3">
+                                <label for="sqlmapUrl" class="form-label">目标URL</label>
+                                <input type="url" class="form-control" id="sqlmapUrl"
+                                       placeholder="http://target.com/page?id=1" required>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="sqlmapLevel" class="form-label">检测级别 (1-5)</label>
+                                    <select class="form-select" id="sqlmapLevel">
+                                        <option value="1">1 - 基础</option>
+                                        <option value="2">2 - 标准</option>
+                                        <option value="3" selected>3 - 深度</option>
+                                        <option value="4">4 - 全面</option>
+                                        <option value="5">5 - 极限</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="sqlmapRisk" class="form-label">风险级别 (1-3)</label>
+                                    <select class="form-select" id="sqlmapRisk">
+                                        <option value="1">1 - 安全</option>
+                                        <option value="2" selected>2 - 标准</option>
+                                        <option value="3">3 - 激进</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="sqlmapTechnique" class="form-label">注入技术</label>
+                                <select class="form-select" id="sqlmapTechnique">
+                                    <option value="" selected>自动检测 (全部)</option>
+                                    <option value="B">B - 布尔盲注</option>
+                                    <option value="E">E - 错误注入</option>
+                                    <option value="U">U - UNION注入</option>
+                                    <option value="S">S - 堆叠查询</option>
+                                    <option value="T">T - 时间盲注</option>
+                                    <option value="Q">Q - 内联查询</option>
+                                    <option value="BEUST">BEUST - 全部技术</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="sqlmapTamper" class="form-label">Tamper脚本 (可选)</label>
+                                <select class="form-select" id="sqlmapTamper">
+                                    <option value="" selected>无</option>
+                                </select>
+                                <div class="form-text">用于绕过WAF/IDS</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="sqlmapCookie" class="form-label">Cookie (可选)</label>
+                                <input type="text" class="form-control" id="sqlmapCookie"
+                                       placeholder="PHPSESSID=abc123">
+                            </div>
+                            <a class="btn btn-outline-secondary btn-sm mb-3" data-bs-toggle="collapse" href="#sqlmapAdvanced">
+                                <i class="fas fa-cog"></i> 高级选项
+                            </a>
+                            <div class="collapse" id="sqlmapAdvanced">
+                                <div class="card card-body bg-light mb-3">
+                                    <div class="mb-3">
+                                        <label for="sqlmapExtraArgs" class="form-label">额外参数</label>
+                                        <input type="text" class="form-control" id="sqlmapExtraArgs"
+                                               placeholder="--os-shell --random-agent">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-danger btn-lg">
+                                    <i class="fas fa-play"></i> 启动sqlmap扫描
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0"><i class="fas fa-terminal"></i> sqlmap输出</h5></div>
+                    <div class="card-body">
+                        <div id="sqlmapResults">
+                            <p class="text-muted text-center">等待扫描...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 手动测试 ==================== -->
+    <div class="tab-pane fade" id="manualPanel" role="tabpanel">
+        <div class="row">
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0"><i class="fas fa-edit"></i> Payload测试</h5></div>
+                    <div class="card-body">
+                        <form id="manualForm">
+                            <div class="mb-3">
+                                <label for="manualUrl" class="form-label">目标URL</label>
+                                <input type="url" class="form-control" id="manualUrl"
+                                       placeholder="http://target.com/page" required>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="manualMethod" class="form-label">请求方法</label>
+                                    <select class="form-select" id="manualMethod">
+                                        <option value="GET" selected>GET</option>
+                                        <option value="POST">POST</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="manualParam" class="form-label">参数名</label>
+                                    <input type="text" class="form-control" id="manualParam"
+                                           placeholder="id" required>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="manualPayload" class="form-label">Payload</label>
+                                <textarea class="form-control" id="manualPayload" rows="2"
+                                          placeholder="' OR '1'='1" required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="manualCookie" class="form-label">Cookie (可选)</label>
+                                <input type="text" class="form-control" id="manualCookie">
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-paper-plane"></i> 发送Payload
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <!-- 常用Payload列表 -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-list"></i> 常用Payload</h5>
+                    </div>
+                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                        <div id="payloadList">
+                            <p class="text-muted text-center">加载中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0"><i class="fas fa-reply"></i> 响应结果</h5></div>
+                    <div class="card-body">
+                        <div id="manualResults">
+                            <p class="text-muted text-center">等待测试...</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- 测试历史 -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-history"></i> 测试历史</h5>
+                    </div>
+                    <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                        <div id="testHistory">
+                            <p class="text-muted text-center">暂无记录</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 数据提取 ==================== -->
+    <div class="tab-pane fade" id="extractPanel" role="tabpanel">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header"><h5 class="mb-0"><i class="fas fa-sitemap"></i> 数据库浏览</h5></div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="extractUrl" class="form-label">目标URL</label>
+                            <input type="url" class="form-control" id="extractUrl"
+                                   placeholder="http://target.com/page?id=1">
+                        </div>
+                        <div class="mb-3">
+                            <label for="extractCookie" class="form-label">Cookie (可选)</label>
+                            <input type="text" class="form-control" id="extractCookie">
+                        </div>
+                        <button class="btn btn-info btn-sm w-100 mb-3" onclick="loadDatabases()">
+                            <i class="fas fa-database"></i> 获取数据库列表
+                        </button>
+
+                        <!-- 数据库树 -->
+                        <div id="dbTree">
+                            <p class="text-muted text-center small">点击上方按钮开始</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-table"></i> 数据预览</h5>
+                            <span id="extractInfo" class="text-muted small"></span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="dataPreview">
+                            <p class="text-muted text-center">选择数据库和表来查看数据</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 状态管理
+const sqliState = new StateManager('sqli');
+let testHistoryList = [];
+
+// ==================== 初始化 ====================
+document.addEventListener('DOMContentLoaded', function() {
+    // 检查系统初始化
+    if (typeof checkSystemInitialized === 'function') {
+        checkSystemInitialized().then(ok => {
+            document.getElementById('sqliConfigAlert').style.display = ok ? 'none' : 'block';
+        }).catch(() => {});
+    }
+
+    // 切换POST数据显示
+    document.getElementById('detectMethod').addEventListener('change', function() {
+        document.getElementById('detectPostDataGroup').style.display =
+            this.value === 'POST' ? 'block' : 'none';
+    });
+
+    // 加载tamper脚本列表
+    loadTamperScripts();
+    // 加载常用payload
+    loadPayloadList();
+
+    // 表单提交
+    document.getElementById('detectForm').addEventListener('submit', function(e) {
+        e.preventDefault(); runDetect();
+    });
+    document.getElementById('sqlmapForm').addEventListener('submit', function(e) {
+        e.preventDefault(); runSqlmap();
+    });
+    document.getElementById('manualForm').addEventListener('submit', function(e) {
+        e.preventDefault(); runManualTest();
+    });
+});
+
+// ==================== 注入点检测 ====================
+function runDetect() {
+    const resultsDiv = document.getElementById('detectResults');
+    resultsDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-primary"></div><p class="mt-2">正在检测SQL注入点...</p></div>';
+
+    const method = document.getElementById('detectMethod').value;
+    const body = {
+        target_url: document.getElementById('detectUrl').value,
+        method: method,
+        cookie: document.getElementById('detectCookie').value || null
+    };
+    if (method === 'POST') {
+        try { body.data = JSON.parse(document.getElementById('detectPostData').value); } catch(e) {}
+    }
+
+    fetch('/api/sqli/detect', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+    })
+    .then(r => r.json())
+    .then(data => renderDetectResults(data))
+    .catch(err => { resultsDiv.innerHTML = `<div class="alert alert-danger">请求失败: ${err}</div>`; });
+}
+
+function renderDetectResults(data) {
+    const div = document.getElementById('detectResults');
+    let html = '';
+
+    if (data.vulnerable) {
+        html += `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> 发现SQL注入漏洞!</div>`;
+        if (data.db_type) {
+            html += `<p><strong>数据库类型:</strong> <span class="badge bg-info">${data.db_type}</span></p>`;
+        }
+        html += '<h6>注入点详情:</h6>';
+        data.injection_points.forEach(point => {
+            html += `
+            <div class="card mb-2">
+                <div class="card-body p-2">
+                    <div class="d-flex justify-content-between">
+                        <strong>参数: ${point.parameter}</strong>
+                        <span class="badge bg-danger">可注入</span>
+                    </div>
+                    <div class="mt-1">
+                        ${point.injection_types.map(t => `<span class="badge bg-warning text-dark me-1">${t}</span>`).join('')}
+                    </div>
+                    ${point.db_errors.length ? `<small class="text-muted">数据库特征: ${point.db_errors.join(', ')}</small>` : ''}
+                    <div class="mt-1">
+                        <small><strong>有效Payload:</strong></small>
+                        <ul class="mb-0 small">
+                            ${point.payloads.map(p => `<li><code>${escapeHtml(p.payload)}</code> - ${p.desc}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            </div>`;
+        });
+    } else {
+        html += `<div class="alert alert-success"><i class="fas fa-check-circle"></i> 未发现SQL注入漏洞</div>`;
+        if (data.error) {
+            html += `<p class="text-muted">${data.error}</p>`;
+        }
+    }
+    html += `<small class="text-muted">检测时间: ${data.timestamp || new Date().toISOString()}</small>`;
+    div.innerHTML = html;
+}
+
+// ==================== sqlmap自动化 ====================
+function runSqlmap() {
+    const resultsDiv = document.getElementById('sqlmapResults');
+    resultsDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-danger"></div><p class="mt-2">sqlmap扫描中，请耐心等待...</p><small class="text-muted">此过程可能需要数分钟</small></div>';
+
+    const body = {
+        target_url: document.getElementById('sqlmapUrl').value,
+        level: parseInt(document.getElementById('sqlmapLevel').value),
+        risk: parseInt(document.getElementById('sqlmapRisk').value),
+        technique: document.getElementById('sqlmapTechnique').value || null,
+        tamper: document.getElementById('sqlmapTamper').value || null,
+        cookie: document.getElementById('sqlmapCookie').value || null,
+        extra_args: document.getElementById('sqlmapExtraArgs')?.value || null
+    };
+
+    fetch('/api/sqli/sqlmap-scan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+    })
+    .then(r => r.json())
+    .then(data => renderSqlmapResults(data))
+    .catch(err => { resultsDiv.innerHTML = `<div class="alert alert-danger">请求失败: ${err}</div>`; });
+}
+
+function renderSqlmapResults(data) {
+    const div = document.getElementById('sqlmapResults');
+    let html = '';
+
+    if (data.success) {
+        html += `<div class="alert alert-danger"><i class="fas fa-bug"></i> sqlmap发现SQL注入漏洞!</div>`;
+        if (data.vulnerabilities && data.vulnerabilities.length > 0) {
+            html += '<h6>漏洞详情:</h6><div class="list-group mb-3">';
+            data.vulnerabilities.forEach(v => {
+                html += `<div class="list-group-item">
+                    <strong>${v.type}</strong><br>
+                    <small>${v.title}</small><br>
+                    ${v.payload ? `<code class="small">${escapeHtml(v.payload)}</code>` : ''}
+                </div>`;
+            });
+            html += '</div>';
+        }
+        if (data.databases && data.databases.length > 0) {
+            html += `<h6>发现的数据库:</h6><ul>`;
+            data.databases.forEach(db => { html += `<li><code>${db}</code></li>`; });
+            html += '</ul>';
+        }
+    } else {
+        html += `<div class="alert alert-info"><i class="fas fa-info-circle"></i> sqlmap未发现注入漏洞</div>`;
+        if (data.error) html += `<p class="text-muted">${data.error}</p>`;
+    }
+
+    if (data.output) {
+        html += `<h6 class="mt-3">原始输出:</h6>
+        <pre class="bg-dark text-light p-3" style="max-height:300px;overflow-y:auto;font-size:12px;">${escapeHtml(data.output)}</pre>`;
+    }
+    div.innerHTML = html;
+}
+
+// ==================== 手动测试 ====================
+function runManualTest() {
+    const resultsDiv = document.getElementById('manualResults');
+    resultsDiv.innerHTML = '<div class="text-center"><div class="spinner-border text-warning"></div><p class="mt-2">发送Payload中...</p></div>';
+
+    const body = {
+        target_url: document.getElementById('manualUrl').value,
+        method: document.getElementById('manualMethod').value,
+        param_name: document.getElementById('manualParam').value,
+        payload: document.getElementById('manualPayload').value,
+        cookie: document.getElementById('manualCookie').value || null
+    };
+
+    fetch('/api/sqli/test-payload', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+    })
+    .then(r => r.json())
+    .then(data => {
+        renderManualResult(data);
+        addToHistory(body, data);
+    })
+    .catch(err => { resultsDiv.innerHTML = `<div class="alert alert-danger">请求失败: ${err}</div>`; });
+}
+
+function renderManualResult(data) {
+    const div = document.getElementById('manualResults');
+    let html = '';
+
+    const hasErrors = data.errors_found && data.errors_found.length > 0;
+    html += `<div class="alert ${hasErrors ? 'alert-danger' : 'alert-info'}">
+        ${hasErrors ? '<i class="fas fa-exclamation-triangle"></i> 检测到数据库错误!' : '<i class="fas fa-info-circle"></i> Payload已发送'}
+    </div>`;
+
+    html += `<table class="table table-sm">
+        <tr><th>状态码</th><td>${data.response_code || 'N/A'}</td></tr>
+        <tr><th>响应长度</th><td>${data.response_length} bytes</td></tr>
+        <tr><th>响应时间</th><td>${data.response_time}s</td></tr>
+        <tr><th>数据库错误</th><td>${hasErrors ? data.errors_found.map(e => `<span class="badge bg-danger me-1">${e}</span>`).join('') : '<span class="badge bg-success">无</span>'}</td></tr>
+    </table>`;
+
+    if (data.response_preview) {
+        html += `<h6>响应预览:</h6>
+        <pre class="bg-light p-2" style="max-height:200px;overflow-y:auto;font-size:12px;">${escapeHtml(data.response_preview)}</pre>`;
+    }
+    div.innerHTML = html;
+}
+
+function addToHistory(req, res) {
+    testHistoryList.unshift({
+        time: new Date().toLocaleTimeString(),
+        param: req.param_name,
+        payload: req.payload,
+        status: res.response_code,
+        length: res.response_length,
+        errors: res.errors_found || []
+    });
+    if (testHistoryList.length > 20) testHistoryList.pop();
+    renderHistory();
+}
+
+function renderHistory() {
+    const div = document.getElementById('testHistory');
+    if (!testHistoryList.length) { div.innerHTML = '<p class="text-muted text-center">暂无记录</p>'; return; }
+    let html = '<table class="table table-sm small"><thead><tr><th>时间</th><th>参数</th><th>Payload</th><th>状态</th><th>长度</th><th>错误</th></tr></thead><tbody>';
+    testHistoryList.forEach(h => {
+        const errBadge = h.errors.length ? `<span class="badge bg-danger">${h.errors.join(',')}</span>` : '-';
+        html += `<tr>
+            <td>${h.time}</td><td>${h.param}</td>
+            <td><code class="small">${escapeHtml(h.payload.substring(0, 30))}</code></td>
+            <td>${h.status}</td><td>${h.length}</td><td>${errBadge}</td>
+        </tr>`;
+    });
+    html += '</tbody></table>';
+    div.innerHTML = html;
+}
+
+// ==================== 数据提取 ====================
+function loadDatabases() {
+    const tree = document.getElementById('dbTree');
+    tree.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm text-info"></div> 获取中...</div>';
+
+    fetch('/api/sqli/databases', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            target_url: document.getElementById('extractUrl').value,
+            cookie: document.getElementById('extractCookie').value || null
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && data.databases.length > 0) {
+            let html = '<div class="list-group list-group-flush">';
+            data.databases.forEach(db => {
+                html += `<a href="#" class="list-group-item list-group-item-action py-1" onclick="loadTables('${db}'); return false;">
+                    <i class="fas fa-database text-primary me-1"></i> ${db}
+                </a>`;
+            });
+            html += '</div>';
+            tree.innerHTML = html;
+        } else {
+            tree.innerHTML = `<div class="alert alert-warning small">${data.error || '未获取到数据库'}</div>`;
+        }
+    })
+    .catch(err => { tree.innerHTML = `<div class="alert alert-danger small">${err}</div>`; });
+}
+
+function loadTables(database) {
+    const tree = document.getElementById('dbTree');
+    // 在当前数据库下显示加载
+    tree.innerHTML += `<div id="tableLoading" class="text-center mt-2"><div class="spinner-border spinner-border-sm"></div> 加载 ${database} 的表...</div>`;
+
+    fetch('/api/sqli/tables', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            target_url: document.getElementById('extractUrl').value,
+            database: database,
+            cookie: document.getElementById('extractCookie').value || null
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('tableLoading')?.remove();
+        if (data.success && data.tables.length > 0) {
+            let html = '<div class="list-group list-group-flush ms-3">';
+            data.tables.forEach(tbl => {
+                html += `<a href="#" class="list-group-item list-group-item-action py-1 small" onclick="loadColumns('${database}', '${tbl}'); return false;">
+                    <i class="fas fa-table text-success me-1"></i> ${tbl}
+                </a>`;
+            });
+            html += '</div>';
+            tree.innerHTML += html;
+        } else {
+            tree.innerHTML += `<div class="alert alert-warning small mt-2">${data.error || '未获取到表'}</div>`;
+        }
+    })
+    .catch(err => { document.getElementById('tableLoading')?.remove(); });
+}
+
+function loadColumns(database, table) {
+    document.getElementById('extractInfo').textContent = `${database}.${table}`;
+    const preview = document.getElementById('dataPreview');
+    preview.innerHTML = '<div class="text-center"><div class="spinner-border"></div><p class="mt-2">加载列信息...</p></div>';
+
+    fetch('/api/sqli/columns', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            target_url: document.getElementById('extractUrl').value,
+            database: database,
+            table: table,
+            cookie: document.getElementById('extractCookie').value || null
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && data.columns.length > 0) {
+            let html = `<h6>表结构: ${database}.${table}</h6>`;
+            html += '<table class="table table-sm"><thead><tr><th>列名</th><th>类型</th></tr></thead><tbody>';
+            data.columns.forEach(col => {
+                html += `<tr><td><code>${col.name}</code></td><td>${col.type || 'N/A'}</td></tr>`;
+            });
+            html += '</tbody></table>';
+            html += `<button class="btn btn-primary btn-sm" onclick="dumpData('${database}', '${table}')">
+                <i class="fas fa-download"></i> 提取数据
+            </button>`;
+            preview.innerHTML = html;
+        } else {
+            preview.innerHTML = `<div class="alert alert-warning">${data.error || '未获取到列'}</div>`;
+        }
+    })
+    .catch(err => { preview.innerHTML = `<div class="alert alert-danger">${err}</div>`; });
+}
+
+function dumpData(database, table) {
+    const preview = document.getElementById('dataPreview');
+    preview.innerHTML = '<div class="text-center"><div class="spinner-border"></div><p class="mt-2">提取数据中，请稍候...</p></div>';
+
+    fetch('/api/sqli/dump', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            target_url: document.getElementById('extractUrl').value,
+            database: database,
+            table: table,
+            cookie: document.getElementById('extractCookie').value || null
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && data.data.length > 0) {
+            let html = `<h6>数据: ${database}.${table} (${data.data.length} 行)</h6>`;
+            html += '<div class="table-responsive" style="max-height:400px;overflow-y:auto;">';
+            html += '<table class="table table-sm table-striped"><thead><tr>';
+            const cols = Object.keys(data.data[0]);
+            cols.forEach(c => { html += `<th>${c}</th>`; });
+            html += '</tr></thead><tbody>';
+            data.data.forEach(row => {
+                html += '<tr>';
+                cols.forEach(c => { html += `<td>${escapeHtml(String(row[c] || ''))}</td>`; });
+                html += '</tr>';
+            });
+            html += '</tbody></table></div>';
+            preview.innerHTML = html;
+        } else {
+            preview.innerHTML = `<div class="alert alert-warning">${data.error || '未提取到数据'}</div>`;
+        }
+    })
+    .catch(err => { preview.innerHTML = `<div class="alert alert-danger">${err}</div>`; });
+}
+
+// ==================== 辅助函数 ====================
+function loadTamperScripts() {
+    fetch('/api/sqli/tampers')
+    .then(r => r.json())
+    .then(data => {
+        const select = document.getElementById('sqlmapTamper');
+        if (data.tampers && data.tampers.length > 0) {
+            data.tampers.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.name;
+                opt.textContent = `${t.name} - ${t.description}`;
+                select.appendChild(opt);
+            });
+        }
+    })
+    .catch(() => {});
+}
+
+function loadPayloadList() {
+    fetch('/api/sqli/payloads')
+    .then(r => r.json())
+    .then(data => {
+        const div = document.getElementById('payloadList');
+        if (data.payloads) {
+            let html = '';
+            for (const [category, payloads] of Object.entries(data.payloads)) {
+                html += `<h6 class="mt-2">${category}</h6><div class="list-group list-group-flush">`;
+                payloads.forEach(p => {
+                    html += `<a href="#" class="list-group-item list-group-item-action py-1 small" onclick="usePayload(this.dataset.payload); return false;" data-payload="${escapeHtml(p.payload)}">
+                        <code>${escapeHtml(p.payload)}</code><br>
+                        <small class="text-muted">${p.description}</small>
+                    </a>`;
+                });
+                html += '</div>';
+            }
+            div.innerHTML = html;
+        }
+    })
+    .catch(() => {});
+}
+
+function usePayload(payload) {
+    document.getElementById('manualPayload').value = payload;
+    // 切换到手动测试标签
+    const tab = document.getElementById('manual-tab');
+    if (tab) { new bootstrap.Tab(tab).show(); }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}

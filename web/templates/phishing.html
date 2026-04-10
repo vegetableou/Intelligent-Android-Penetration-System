@@ -1,0 +1,937 @@
+{% extends "base.html" %}
+
+{% block title %}钓鱼攻击 - Android自动化渗透测试框架{% endblock %}
+
+{% block content %}
+<!-- 配置状态提示 -->
+<div id="phishingConfigAlert" class="alert alert-warning" style="display: none;">
+    <i class="fas fa-exclamation-triangle"></i> 系统未初始化，请先到<a href="{{ url_for('dashboard') }}">控制面板</a>设置LHOST
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <h1><i class="fas fa-fish"></i> 钓鱼攻击</h1>
+        <p class="text-muted">创建恶意APK和钓鱼页面进行社会工程学攻击</p>
+        
+        <!-- 添加GoPhish配置按钮 -->
+        <div class="mb-3">
+            <a href="{{ url_for('gophish_management') }}" class="btn btn-info">
+                <i class="fas fa-cogs"></i> 配置GoPhish
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cog"></i> 攻击配置</h5>
+            </div>
+            <div class="card-body">
+                <form id="phishingForm">
+                    <div class="mb-3">
+                        <label for="attackName" class="form-label">攻击名称</label>
+                        <input type="text" class="form-control" id="attackName" 
+                               value="Android安全紧急更新" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="appName" class="form-label">应用名称</label>
+                        <input type="text" class="form-control" id="appName" 
+                               value="System Update" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="lhost" class="form-label">监听地址 (LHOST)</label>
+                                <input type="text" class="form-control" id="lhost" 
+                                       value="0.0.0.0" readonly>
+                                <div class="form-text">使用系统初始化时设置的LHOST</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="lport" class="form-label">监听端口 (LPORT)</label>
+                                <input type="number" class="form-control" id="lport" 
+                                       value="4444" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 隐身选项 -->
+                    <div class="mb-3">
+                        <label for="stealthLevel" class="form-label">隐身级别</label>
+                        <select class="form-select" id="stealthLevel">
+                            <option value="low">低级隐身 - 快速生成</option>
+                            <option value="medium" selected>中级隐身 - 平衡性能与隐蔽性</option>
+                            <option value="high">高级隐身 - 最大隐蔽性（较慢）</option>
+                        </select>
+                        <div class="form-text">
+                            高级隐身使用多重编码和混淆技术，提高免杀能力
+                        </div>
+                    </div>
+
+                    <!-- 架构选择 -->
+                    <div class="mb-3">
+                        <label for="architecture" class="form-label">目标架构</label>
+                        <select class="form-select" id="architecture">
+                            <option value="arm" selected>ARM架构 (大多数Android设备)</option>
+                            <option value="arm64">ARM64架构 (现代Android设备)</option>
+                            <option value="x86">x86架构 (少数Android设备)</option>
+                            <option value="x64">x64架构 (罕见Android设备)</option>
+                        </select>
+                        <div class="form-text">
+                            根据目标设备选择正确的架构以提高兼容性
+                        </div>
+                    </div>
+
+                    <!-- APK深度伪装选项 -->
+                    <div class="mb-3">
+                        <label class="form-label">APK深度伪装 (apktool)</label>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="useApktool">
+                            <label class="form-check-label" for="useApktool">启用apktool深度伪装</label>
+                        </div>
+                        <div class="form-text">
+                            使用apktool反编译、修改和重新打包APK，提供更好的伪装和免杀效果
+                        </div>
+                    </div>
+
+                    <!-- apktool配置（默认隐藏） -->
+                    <div id="apktoolConfigSection" style="display: none;">
+                        <div class="mb-3">
+                            <label for="templateApk" class="form-label">模板APK路径</label>
+                            <input type="text" class="form-control" id="templateApk" 
+                                   placeholder="/path/to/template.apk">
+                            <div class="form-text">选择一个正常APK作为伪装模板</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="disguiseAppName" class="form-label">伪装应用名称</label>
+                            <input type="text" class="form-control" id="disguiseAppName" 
+                                   value="Google Play Services">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="disguisePackage" class="form-label">伪装包名</label>
+                            <input type="text" class="form-control" id="disguisePackage" 
+                                   value="com.google.android.gms">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="disguiseIcon" class="form-label">伪装图标路径</label>
+                            <input type="text" class="form-control" id="disguiseIcon" 
+                                   placeholder="/path/to/icon.png">
+                            <div class="form-text">选择PNG格式的图标文件（可选）</div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <small>
+                                <i class="fas fa-info-circle"></i> 
+                                <strong>apktool深度伪装功能：</strong><br>
+                                1. 反编译模板APK<br>
+                                2. 注入meterpreter payload<br>
+                                3. 修改应用名称、包名和图标<br>
+                                4. 应用代码混淆技术<br>
+                                5. 重新打包并签名<br>
+                                <strong>注意：</strong>此过程需要较长时间，请耐心等待
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <!-- GoPhish配置选择 -->
+                    <div class="mb-3">
+                        <label class="form-label">GoPhish配置</label>
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="useGoPhish">
+                            <label class="form-check-label" for="useGoPhish">使用GoPhish发送钓鱼邮件</label>
+                        </div>
+                    </div>
+
+                    <!-- GoPhish资源选择（默认隐藏） -->
+                    <div id="gophishConfigSection" style="display: none;">
+                        <div class="mb-3">
+                            <label for="gophishGroup" class="form-label">目标用户组</label>
+                            <select class="form-select" id="gophishGroup">
+                                <option value="">加载用户组...</option>
+                            </select>
+                            <div class="form-text">选择要发送钓鱼邮件的目标用户组</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="gophishTemplate" class="form-label">邮件模板</label>
+                            <select class="form-select" id="gophishTemplate">
+                                <option value="">加载邮件模板...</option>
+                            </select>
+                            <div class="form-text">选择钓鱼邮件使用的模板</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="gophishPage" class="form-label">钓鱼页面</label>
+                            <select class="form-select" id="gophishPage">
+                                <option value="">加载钓鱼页面...</option>
+                            </select>
+                            <div class="form-text">选择用户点击邮件后访问的钓鱼页面</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="gophishProfile" class="form-label">发送配置</label>
+                            <select class="form-select" id="gophishProfile">
+                                <option value="">加载发送配置...</option>
+                            </select>
+                            <div class="form-text">选择用于发送邮件的SMTP配置</div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <small>
+                                <i class="fas fa-info-circle"></i> 
+                                如果没有可用的配置，请先点击上方的<strong>"配置GoPhish"</strong>按钮创建所需资源
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg" id="phishingSubmitBtn">
+                            <i class="fas fa-play"></i> 启动钓鱼攻击
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-download"></i> 独立载荷生成</h5>
+            </div>
+            <div class="card-body">
+                <form id="payloadForm">
+                    <div class="mb-3">
+                        <label for="payloadAppName" class="form-label">应用名称</label>
+                        <input type="text" class="form-control" id="payloadAppName" 
+                               value="System Update">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="payloadLhost" class="form-label">LHOST</label>
+                                <input type="text" class="form-control" id="payloadLhost" 
+                                       value="0.0.0.0" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="payloadLport" class="form-label">LPORT</label>
+                                <input type="number" class="form-control" id="payloadLport" 
+                                       value="4444">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 独立载荷的隐身选项 -->
+                    <div class="mb-3">
+                        <label for="payloadStealthLevel" class="form-label">隐身级别</label>
+                        <select class="form-select" id="payloadStealthLevel">
+                            <option value="low">低级隐身</option>
+                            <option value="medium" selected>中级隐身</option>
+                            <option value="high">高级隐身</option>
+                        </select>
+                    </div>
+
+                    <!-- 架构选择 -->
+                    <div class="mb-3">
+                        <label for="payloadArchitecture" class="form-label">目标架构</label>
+                        <select class="form-select" id="payloadArchitecture">
+                            <option value="arm" selected>ARM架构</option>
+                            <option value="arm64">ARM64架构</option>
+                            <option value="x86">x86架构</option>
+                            <option value="x64">x64架构</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" id="payloadSubmitBtn">
+                        <i class="fas fa-hammer"></i> 生成载荷
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> 攻击状态</h5>
+            </div>
+            <div class="card-body">
+                <div id="attackStatus">
+                    <p class="text-muted text-center">暂无活动攻击</p>
+                </div>
+                
+                <div class="mt-3" id="activeAttackInfo" style="display: none;">
+                    <h6>活动攻击信息</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <th>攻击名称:</th>
+                            <td id="currentAttackName">-</td>
+                        </tr>
+                        <tr>
+                            <th>钓鱼URL:</th>
+                            <td><a href="#" id="phishingUrl" target="_blank">-</a></td>
+                        </tr>
+                        <tr>
+                            <th>下载URL:</th>
+                            <td><a href="#" id="downloadUrl" target="_blank">-</a></td>
+                        </tr>
+                        <tr>
+                            <th>隐身级别:</th>
+                            <td><span id="stealthLevelBadge" class="badge bg-info">中级</span></td>
+                        </tr>
+                        <tr>
+                            <th>目标架构:</th>
+                            <td><span id="architectureBadge" class="badge bg-secondary">ARM</span></td>
+                        </tr>
+                        <tr>
+                            <th>GoPhish活动:</th>
+                            <td><span id="gophishCampaignStatus" class="badge bg-success">运行中</span></td>
+                        </tr>
+                        <tr>
+                            <th>状态:</th>
+                            <td><span id="attackActiveStatus" class="badge bg-success">运行中</span></td>
+                        </tr>
+                    </table>
+                    
+                    <button class="btn btn-danger btn-sm" onclick="stopPhishing()">
+                        <i class="fas fa-stop"></i> 停止攻击
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-list"></i> 生成的载荷</h5>
+            </div>
+            <div class="card-body">
+                <div id="payloadsList">
+                    <p class="text-muted text-center">加载中...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- GoPhish资源状态 -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cogs"></i> GoPhish资源状态</h5>
+            </div>
+            <div class="card-body">
+                <div id="gophishResourcesStatus">
+                    <p class="text-muted text-center">加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 结果模态框 -->
+<div class="modal fade" id="resultModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">攻击结果</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="resultContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 全局变量
+let gophishGroups = [];
+let gophishTemplates = [];
+let gophishPages = [];
+let gophishProfiles = [];
+const phishingState = new StateManager('phishing');
+
+// 检查配置并填充LHOST
+function initializePhishingPage() {
+    const lhostInput = document.getElementById('lhost');
+    const payloadLhostInput = document.getElementById('payloadLhost');
+    const configAlert = document.getElementById('phishingConfigAlert');
+    const phishingBtn = document.getElementById('phishingSubmitBtn');
+    const payloadBtn = document.getElementById('payloadSubmitBtn');
+    
+    // 首先使用全局配置
+    if (window.APP_CONFIG && window.APP_CONFIG.controller_initialized) {
+        lhostInput.value = window.APP_CONFIG.lhost;
+        payloadLhostInput.value = window.APP_CONFIG.lhost;
+        configAlert.style.display = 'none';
+        phishingBtn.disabled = false;
+        payloadBtn.disabled = false;
+        
+        // 加载GoPhish资源
+        loadGoPhishResources();
+        loadGoPhishStatus();
+    } else {
+        // 如果没有全局配置，从API获取
+        fetch('/api/config/get')
+            .then(response => response.json())
+            .then(data => {
+                if (data.controller_initialized) {
+                    lhostInput.value = data.lhost;
+                    payloadLhostInput.value = data.lhost;
+                    configAlert.style.display = 'none';
+                    phishingBtn.disabled = false;
+                    payloadBtn.disabled = false;
+                    // 更新全局配置
+                    window.APP_CONFIG = data;
+                    
+                    // 加载GoPhish资源
+                    loadGoPhishResources();
+                    loadGoPhishStatus();
+                } else {
+                    configAlert.style.display = 'block';
+                    phishingBtn.disabled = true;
+                    payloadBtn.disabled = true;
+                }
+            })
+            .catch(error => {
+                console.error('获取配置失败:', error);
+                configAlert.style.display = 'block';
+                phishingBtn.disabled = true;
+                payloadBtn.disabled = true;
+            });
+    }
+}
+
+// 加载GoPhish资源
+function loadGoPhishResources() {
+    // 加载用户组
+    fetch('/api/gophish/groups')
+        .then(response => response.json())
+        .then(groups => {
+            gophishGroups = groups;
+            const select = document.getElementById('gophishGroup');
+            select.innerHTML = '<option value="">选择用户组...</option>';
+            groups.forEach(group => {
+                const targetCount = group.targets ? group.targets.length : 0;
+                select.innerHTML += `<option value="${group.id}">${escapeHtml(group.name)} (${targetCount}个目标)</option>`;
+            });
+        })
+        .catch(error => {
+            console.error('加载用户组失败:', error);
+            document.getElementById('gophishGroup').innerHTML = '<option value="">加载失败</option>';
+        });
+
+    // 加载邮件模板
+    fetch('/api/gophish/templates')
+        .then(response => response.json())
+        .then(templates => {
+            gophishTemplates = templates;
+            const select = document.getElementById('gophishTemplate');
+            select.innerHTML = '<option value="">选择邮件模板...</option>';
+            templates.forEach(template => {
+                select.innerHTML += `<option value="${template.id}">${escapeHtml(template.name)}</option>`;
+            });
+        })
+        .catch(error => {
+            console.error('加载邮件模板失败:', error);
+            document.getElementById('gophishTemplate').innerHTML = '<option value="">加载失败</option>';
+        });
+
+    // 加载钓鱼页面
+    fetch('/api/gophish/pages')
+        .then(response => response.json())
+        .then(pages => {
+            gophishPages = pages;
+            const select = document.getElementById('gophishPage');
+            select.innerHTML = '<option value="">选择钓鱼页面...</option>';
+            pages.forEach(page => {
+                select.innerHTML += `<option value="${page.id}">${escapeHtml(page.name)}</option>`;
+            });
+        })
+        .catch(error => {
+            console.error('加载钓鱼页面失败:', error);
+            document.getElementById('gophishPage').innerHTML = '<option value="">加载失败</option>';
+        });
+
+    // 加载发送配置
+    fetch('/api/gophish/profiles')
+        .then(response => response.json())
+        .then(profiles => {
+            gophishProfiles = profiles;
+            const select = document.getElementById('gophishProfile');
+            select.innerHTML = '<option value="">选择发送配置...</option>';
+            profiles.forEach(profile => {
+                select.innerHTML += `<option value="${profile.id}">${escapeHtml(profile.name)} (${profile.host})</option>`;
+            });
+        })
+        .catch(error => {
+            console.error('加载发送配置失败:', error);
+            document.getElementById('gophishProfile').innerHTML = '<option value="">加载失败</option>';
+        });
+}
+
+// 加载GoPhish状态
+function loadGoPhishStatus() {
+    fetch('/api/gophish/status')
+        .then(response => response.json())
+        .then(status => {
+            const statusDiv = document.getElementById('gophishResourcesStatus');
+            
+            if (status.connected) {
+                const components = status.components || {};
+                statusDiv.innerHTML = `
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <h6>${components.groups || 0}</h6>
+                            <small class="text-muted">用户组</small>
+                        </div>
+                        <div class="col-3">
+                            <h6>${components.templates || 0}</h6>
+                            <small class="text-muted">邮件模板</small>
+                        </div>
+                        <div class="col-3">
+                            <h6>${components.pages || 0}</h6>
+                            <small class="text-muted">钓鱼页面</small>
+                        </div>
+                        <div class="col-3">
+                            <h6>${components.smtp_profiles || 0}</h6>
+                            <small class="text-muted">发送配置</small>
+                        </div>
+                    </div>
+                    <div class="mt-2 text-center">
+                        <span class="badge bg-success">连接正常</span>
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        GoPhish连接失败: ${status.error || '未知错误'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            document.getElementById('gophishResourcesStatus').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-times-circle"></i> 
+                    无法获取GoPhish状态: ${error.message}
+                </div>
+            `;
+        });
+}
+
+// 监听GoPhish复选框变化
+document.getElementById('useGoPhish').addEventListener('change', function() {
+    const configSection = document.getElementById('gophishConfigSection');
+    if (this.checked) {
+        configSection.style.display = 'block';
+        // 重新加载资源以确保数据最新
+        loadGoPhishResources();
+    } else {
+        configSection.style.display = 'none';
+    }
+});
+
+// 监听apktool复选框变化
+document.getElementById('useApktool').addEventListener('change', function() {
+    const configSection = document.getElementById('apktoolConfigSection');
+    if (this.checked) {
+        configSection.style.display = 'block';
+    } else {
+        configSection.style.display = 'none';
+    }
+});
+
+// 页面加载时初始化
+document.addEventListener('DOMContentLoaded', function() {
+    restorePhishingState();
+    initializePhishingPage();
+    loadPayloads();
+    checkAttackStatus();
+    setInterval(checkAttackStatus, 3000);
+    setInterval(loadGoPhishStatus, 10000);
+});
+
+// 恢复钓鱼页面状态
+function restorePhishingState() {
+    const saved = phishingState.loadState();
+    if (!saved) return;
+    
+    // 恢复表单输入
+    if (saved.attackName) document.getElementById('attackName').value = saved.attackName;
+    if (saved.appName) document.getElementById('appName').value = saved.appName;
+    if (saved.lport) document.getElementById('lport').value = saved.lport;
+    if (saved.stealthLevel) document.getElementById('stealthLevel').value = saved.stealthLevel;
+    if (saved.architecture) document.getElementById('architecture').value = saved.architecture;
+    
+    // 恢复apktool配置
+    if (saved.useApktool) {
+        document.getElementById('useApktool').checked = true;
+        document.getElementById('apktoolConfigSection').style.display = 'block';
+        if (saved.templateApk) document.getElementById('templateApk').value = saved.templateApk;
+        if (saved.disguiseAppName) document.getElementById('disguiseAppName').value = saved.disguiseAppName;
+        if (saved.disguisePackage) document.getElementById('disguisePackage').value = saved.disguisePackage;
+        if (saved.disguiseIcon) document.getElementById('disguiseIcon').value = saved.disguiseIcon;
+    }
+    
+    // 恢复GoPhish配置
+    if (saved.useGoPhish) {
+        document.getElementById('useGoPhish').checked = true;
+        document.getElementById('gophishConfigSection').style.display = 'block';
+    }
+    
+    // 恢复攻击结果
+    if (saved.lastAttackResult) {
+        showResult(saved.lastAttackResult);
+    }
+}
+
+// 保存钓鱼页面状态
+function savePhishingState(attackResult) {
+    phishingState.saveState({
+        attackName: document.getElementById('attackName').value,
+        appName: document.getElementById('appName').value,
+        lport: document.getElementById('lport').value,
+        stealthLevel: document.getElementById('stealthLevel').value,
+        architecture: document.getElementById('architecture').value,
+        useApktool: document.getElementById('useApktool').checked,
+        templateApk: document.getElementById('templateApk').value,
+        disguiseAppName: document.getElementById('disguiseAppName').value,
+        disguisePackage: document.getElementById('disguisePackage').value,
+        disguiseIcon: document.getElementById('disguiseIcon').value,
+        useGoPhish: document.getElementById('useGoPhish').checked,
+        lastAttackResult: attackResult || null
+    });
+}
+
+// 更新钓鱼攻击表单提交
+document.getElementById('phishingForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const useGoPhish = document.getElementById('useGoPhish').checked;
+    const useApktool = document.getElementById('useApktool').checked;
+    const formData = {
+        attack_name: document.getElementById('attackName').value,
+        app_name: document.getElementById('appName').value,
+        lhost: document.getElementById('lhost').value,
+        lport: parseInt(document.getElementById('lport').value),
+        use_gophish: useGoPhish,
+        stealth_level: document.getElementById('stealthLevel').value,
+        architecture: document.getElementById('architecture').value,
+        use_apktool: useApktool
+    };
+    
+    // 如果使用apktool，添加伪装配置
+    if (useApktool) {
+        const templateApk = document.getElementById('templateApk').value;
+        if (!templateApk) {
+            alert('请提供模板APK路径');
+            return;
+        }
+        
+        formData.template_apk = templateApk;
+        formData.disguise_config = {
+            app_name: document.getElementById('disguiseAppName').value,
+            package_name: document.getElementById('disguisePackage').value,
+            icon_path: document.getElementById('disguiseIcon').value,
+            version_info: {
+                version_code: String(Math.floor(Math.random() * 10000000)),
+                version_name: `${Math.floor(Math.random() * 20 + 10)}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 100)}`
+            }
+        };
+    }
+    
+    // 禁用提交按钮防止重复提交
+    const submitBtn = document.getElementById('phishingSubmitBtn');
+
+    // 如果使用GoPhish，添加选择的资源ID并验证
+    if (useGoPhish) {
+        formData.gophish_group = document.getElementById('gophishGroup').value;
+        formData.gophish_template = document.getElementById('gophishTemplate').value;
+        formData.gophish_page = document.getElementById('gophishPage').value;
+        formData.gophish_profile = document.getElementById('gophishProfile').value;
+        
+        // 验证是否选择了所有必要的资源
+        if (!formData.gophish_group || !formData.gophish_template || !formData.gophish_page || !formData.gophish_profile) {
+            alert('使用GoPhish时请选择所有必要资源，或取消勾选"使用GoPhish发送钓鱼邮件"后直接发动攻击');
+            return;
+        }
+    }
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 启动中...';
+    
+    fetch('/api/phishing/attack', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-play"></i> 启动钓鱼攻击';
+        showResult(data);
+        checkAttackStatus();
+        // 保存状态
+        savePhishingState(data);
+    })
+    .catch(error => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-play"></i> 启动钓鱼攻击';
+        alert('请求失败: ' + error);
+    });
+});
+
+// 更新独立载荷生成
+document.getElementById('payloadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        app_name: document.getElementById('payloadAppName').value,
+        lhost: document.getElementById('payloadLhost').value,
+        lport: parseInt(document.getElementById('payloadLport').value),
+        stealth_level: document.getElementById('payloadStealthLevel').value,
+        architecture: document.getElementById('payloadArchitecture').value
+    };
+    
+    fetch('/api/payloads/generate', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('载荷生成成功: ' + data.payload_path);
+            loadPayloads();
+        } else {
+            alert('生成失败: ' + data.error);
+        }
+    });
+});
+
+// 检查攻击状态
+function checkAttackStatus() {
+    fetch('/api/phishing/status')
+        .then(response => response.json())
+        .then(data => {
+            const statusDiv = document.getElementById('attackStatus');
+            const infoDiv = document.getElementById('activeAttackInfo');
+            
+            if (data.active) {
+                statusDiv.style.display = 'none';
+                infoDiv.style.display = 'block';
+                
+                const phishingData = data.phishing_data;
+                const phishingResult = phishingData.phishing_result || {};
+                
+                document.getElementById('currentAttackName').textContent = 
+                    phishingData.attack_name || '未知';
+                
+                // 钓鱼URL
+                if (phishingResult.phishing_url) {
+                    document.getElementById('phishingUrl').href = phishingResult.phishing_url;
+                    document.getElementById('phishingUrl').textContent = phishingResult.phishing_url;
+                } else {
+                    document.getElementById('phishingUrl').textContent = '钓鱼URL未设置';
+                    document.getElementById('phishingUrl').href = '#';
+                }
+                
+                // 下载URL
+                if (phishingResult.download_url) {
+                    document.getElementById('downloadUrl').href = phishingResult.download_url;
+                    document.getElementById('downloadUrl').textContent = phishingResult.download_url;
+                } else {
+                    document.getElementById('downloadUrl').textContent = '下载URL未生成';
+                    document.getElementById('downloadUrl').href = '#';
+                }
+
+                // 隐身级别显示
+                const stealthLevel = phishingData.stealth_level || 'medium';
+                const stealthBadge = document.getElementById('stealthLevelBadge');
+                stealthBadge.textContent = getStealthLevelText(stealthLevel);
+                
+                // 架构显示
+                const architecture = phishingData.architecture || 'arm';
+                const architectureBadge = document.getElementById('architectureBadge');
+                architectureBadge.textContent = getArchitectureText(architecture);
+                
+                // GoPhish活动状态
+                const gophishStatus = document.getElementById('gophishCampaignStatus');
+                if (phishingResult.type === 'gophish') {
+                    gophishStatus.textContent = '运行中';
+                    gophishStatus.className = 'badge bg-success';
+                } else {
+                    gophishStatus.textContent = '未使用';
+                    gophishStatus.className = 'badge bg-secondary';
+                }
+                
+            } else {
+                statusDiv.style.display = 'block';
+                infoDiv.style.display = 'none';
+            }
+        });
+}
+
+// 获取隐身级别文本
+function getStealthLevelText(level) {
+    const levels = {
+        'low': '低级隐身',
+        'medium': '中级隐身', 
+        'high': '高级隐身'
+    };
+    return levels[level] || '未知';
+}
+
+// 获取架构文本
+function getArchitectureText(arch) {
+    const architectures = {
+        'arm': 'ARM',
+        'arm64': 'ARM64',
+        'x86': 'x86',
+        'x64': 'x64'
+    };
+    return architectures[arch] || '未知';
+}
+
+// 停止钓鱼攻击
+function stopPhishing() {
+    if (confirm('确定要停止钓鱼攻击吗？')) {
+        fetch('/api/phishing/stop', {method: 'POST'})
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                checkAttackStatus();
+                // 清除攻击结果状态
+                savePhishingState(null);
+            });
+    }
+}
+
+// 加载载荷列表
+function loadPayloads() {
+    fetch('/api/payloads/list')
+        .then(response => response.json())
+        .then(data => {
+            const payloadsDiv = document.getElementById('payloadsList');
+            
+            if (data.payloads && data.payloads.length > 0) {
+                let html = '<div class="list-group">';
+                data.payloads.forEach(payload => {
+                    const date = new Date(payload.created * 1000).toLocaleString();
+                    html += `
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${payload.name}</h6>
+                            <small>${(payload.size / 1024 / 1024).toFixed(2)} MB</small>
+                        </div>
+                        <p class="mb-1 small text-muted">创建时间: ${date}</p>
+                        ${payload.stealth_level ? `<span class="badge bg-info">${getStealthLevelText(payload.stealth_level)}</span>` : ''}
+                        ${payload.architecture ? `<span class="badge bg-secondary ms-1">${getArchitectureText(payload.architecture)}</span>` : ''}
+                    </div>
+                    `;
+                });
+                html += '</div>';
+                payloadsDiv.innerHTML = html;
+            } else {
+                payloadsDiv.innerHTML = '<p class="text-muted text-center">暂无载荷</p>';
+            }
+        });
+}
+
+// 显示结果
+function showResult(data) {
+    const resultContent = document.getElementById('resultContent');
+    let html = '';
+    
+    if (data.success) {
+        // 安全地获取监听器信息
+        const listenerInfo = data.listener_info || {
+            lhost: data.lhost || window.APP_CONFIG.lhost || '未知',
+            lport: data.lport || '未知'
+        };
+        
+        // 安全地获取载荷信息
+        const payloadInfo = data.payload || {
+            payload_name: '未知'
+        };
+
+        // 隐身级别信息
+        const stealthLevel = data.stealth_level || 'medium';
+        
+        // 架构信息
+        const architecture = data.architecture || 'arm';
+        
+        html = `
+        <div class="alert alert-success">
+            <h6><i class="fas fa-check-circle"></i> 攻击启动成功！</h6>
+        </div>
+        <table class="table table-bordered">
+            <tr><th>攻击名称</th><td>${data.attack_name || '未知'}</td></tr>
+            <tr><th>钓鱼页面</th><td><a href="${data.phishing_url || '#'}" target="_blank">${data.phishing_url || '未生成'}</a></td></tr>
+            <tr><th>下载链接</th><td><a href="${data.download_url || '#'}" target="_blank">${data.download_url || '未生成'}</a></td></tr>
+            <tr><th>载荷文件</th><td>${payloadInfo.payload_name}</td></tr>
+            <tr><th>隐身级别</th><td>${getStealthLevelText(stealthLevel)}</td></tr>
+            <tr><th>目标架构</th><td>${getArchitectureText(architecture)}</td></tr>
+            <tr><th>监听器</th><td>${listenerInfo.lhost}:${listenerInfo.lport}</td></tr>
+        </table>
+        `;
+        
+        // 如果使用了GoPhish，显示GoPhish相关信息
+        if (data.use_gophish && data.gophish_campaign) {
+            html += `
+            <div class="alert alert-info">
+                <h6><i class="fas fa-envelope"></i> GoPhish活动信息</h6>
+                <table class="table table-sm">
+                    <tr><th>活动ID</th><td>${data.gophish_campaign.id || '未知'}</td></tr>
+                    <tr><th>目标用户组</th><td>${data.gophish_campaign.groups ? data.gophish_campaign.groups.map(g => g.name).join(', ') : '未知'}</td></tr>
+                    <tr><th>邮件模板</th><td>${data.gophish_campaign.template ? data.gophish_campaign.template.name : '未知'}</td></tr>
+                    <tr><th>钓鱼页面</th><td>${data.gophish_campaign.page ? data.gophish_campaign.page.name : '未知'}</td></tr>
+                </table>
+            </div>
+            `;
+        }
+        
+        html += `
+        <div class="alert alert-info">
+            <strong>使用说明：</strong><br>
+            1. 将钓鱼URL发送给目标<br>
+            2. 等待目标下载和执行APK<br>
+            3. 监听器将接收反向连接
+        </div>
+        `;
+    } else {
+        html = `
+        <div class="alert alert-danger">
+            <h6><i class="fas fa-exclamation-triangle"></i> 攻击启动失败</h6>
+            <p>${data.error || '未知错误'}</p>
+        </div>
+        `;
+    }
+    
+    resultContent.innerHTML = html;
+    new bootstrap.Modal(document.getElementById('resultModal')).show();
+}
+
+// 工具函数：转义HTML
+function escapeHtml(unsafe) {
+    if (!unsafe) return '';
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+</script>
+{% endblock %}

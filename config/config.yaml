@@ -1,0 +1,64 @@
+# config/config.yaml
+app:
+  name: "Android自动化渗透测试框架"
+  version: "1.0"
+  debug: true
+
+ngrok:
+  auth_token: "#######" #配置ngrok的密钥
+  enabled: true
+  default_port: 8080
+
+gophish:
+  enabled: true  # 设置为true如果已配置GoPhish
+  api_key: "######" #配置nophish的密钥
+  base_url: "https://localhost:3333"
+  admin_url: "https://localhost:3333"
+
+scanning:
+  nmap_options: "-sV -sS --script vuln"
+  timeout: 300
+
+web:
+  host: "0.0.0.0"
+  port: 5000
+  debug: true
+
+logging:
+  level: "INFO"
+  file: "logs/app.log"
+
+metasploit:
+  default_payload: "android/meterpreter/reverse_tcp"
+  default_lhost: "0.0.0.0"
+  default_lport: 4444
+  msfrpc_password: "#######"  # 设置MSFRPC密码
+  msfrpc_port: 55553
+  msfrpc_auto_start: false  # 是否自动启动MSFRPC服务
+
+stealth:
+  default_level: "medium"  # 默认隐身级别: low, medium, high
+  available_encoders: ["x86/shikata_ga_nai", "x86/jmp_call_additive"]
+  max_iterations: 10
+
+file_upload:
+  timeout: 10
+  max_endpoints_to_try: 5
+  confidence_threshold: 30
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+  
+  # 常见上传路径
+  common_paths:
+    - "/upload"
+    - "/admin/upload"
+    - "/api/upload"
+    - "/file/upload"
+    - "/upload.php"
+  
+  # 文件类型绕过技巧
+  bypass_techniques:
+    - double_extension: "test.apk.jpg"
+    - null_byte: "test.apk%00.jpg"
+    - case_insensitive: "test.ApK"
+    - trailing_dots: "test.apk."
+    - trailing_spaces: "test.apk "

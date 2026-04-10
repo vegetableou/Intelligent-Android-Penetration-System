@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}智能安卓渗透系统V1.0{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <style>
+        /* ═══════════════════════════════════════
+           右侧悬浮导航面板
+        ═══════════════════════════════════════ */
+
+        /* 整体容器：固定在屏幕右侧垂直居中 */
+        #side-nav {
+            position: fixed;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1055;
+            display: flex;
+            align-items: center;
+        }
+
+        /* 内容面板：默认宽度 0，hover 后展开 */
+        #side-nav-panel {
+            width: 0;
+            overflow: hidden;
+            transition: width 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+                        opacity 0.38s ease;
+            opacity: 0;
+            background: rgba(8, 16, 28, 0.94);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-radius: 14px 0 0 14px;
+            border: 1px solid rgba(0, 224, 174, 0.22);
+            border-right: none;
+            box-shadow: -8px 0 40px rgba(0, 0, 0, 0.6),
+                         inset 0 0 0 1px rgba(255,255,255,0.03);
+        }
+
+        #side-nav:hover #side-nav-panel {
+            width: 230px;
+            opacity: 1;
+        }
+
+        /* 导航内容固定宽度，防止换行抖动 */
+        .side-nav-inner {
+            width: 230px;
+            padding: 18px 0 14px;
+        }
+
+        /* 顶部标题区 */
+        .side-nav-header {
+            padding: 0 18px 14px;
+            margin-bottom: 4px;
+            border-bottom: 1px solid rgba(0, 224, 174, 0.12);
+        }
+
+        .side-nav-header .brand-text {
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(0, 224, 174, 0.55);
+            white-space: nowrap;
+        }
+
+        .side-nav-header .brand-sub {
+            font-size: 10px;
+            color: rgba(255,255,255,0.25);
+            margin-top: 2px;
+            white-space: nowrap;
+        }
+
+        /* 分组标签 */
+        .side-nav-group-label {
+            padding: 10px 18px 4px;
+            font-size: 9.5px;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.2);
+            white-space: nowrap;
+        }
+
+        /* 单条导航项 */
+        .side-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 9px 18px 9px 16px;
+            color: rgba(190, 210, 230, 0.7);
+            text-decoration: none;
+            font-size: 13px;
+            white-space: nowrap;
+            transition: color 0.2s, background 0.2s, padding-left 0.2s;
+            position: relative;
+        }
+
+        /* 左侧激活指示条 */
+        .side-nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 4px;
+            bottom: 4px;
+            width: 2.5px;
+            border-radius: 2px;
+            background: transparent;
+            transition: background 0.2s;
+        }
+
+        .side-nav-item:hover {
+            color: #00e0ae;
+            background: rgba(0, 224, 174, 0.07);
+            padding-left: 20px;
+        }
+
+        .side-nav-item:hover::before {
+            background: #00e0ae;
+        }
+
+        .side-nav-item.active {
+            color: #00e0ae;
+            background: rgba(0, 224, 174, 0.1);
+        }
+
+        .side-nav-item.active::before {
+            background: #00e0ae;
+        }
+
+        .side-nav-icon {
+            width: 15px;
+            text-align: center;
+            font-size: 12px;
+            flex-shrink: 0;
+            opacity: 0.75;
+        }
+
+        .side-nav-item.active .side-nav-icon,
+        .side-nav-item:hover .side-nav-icon {
+            opacity: 1;
+        }
+
+        /* 触发标签：屏幕右边缘常驻的细竖条 */
+        #side-nav-trigger {
+            flex-shrink: 0;
+            width: 22px;
+            height: 110px;
+            background: rgba(20, 32, 48, 0.55);
+            border-radius: 8px 0 0 8px;
+            border: 1px solid rgba(0, 224, 174, 0.18);
+            border-right: none;
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: background 0.25s, border-color 0.25s, width 0.25s;
+        }
+
+        #side-nav:hover #side-nav-trigger {
+            background: rgba(0, 224, 174, 0.1);
+            border-color: rgba(0, 224, 174, 0.35);
+            width: 26px;
+        }
+
+        /* 三条横线图标 */
+        .trigger-bar {
+            display: block;
+            width: 10px;
+            height: 1.5px;
+            background: rgba(0, 224, 174, 0.45);
+            border-radius: 2px;
+            transition: background 0.25s, width 0.25s;
+        }
+
+        #side-nav:hover .trigger-bar {
+            background: rgba(0, 224, 174, 0.9);
+        }
+
+        #side-nav:hover .trigger-bar:nth-child(2) {
+            width: 7px;
+        }
+
+        /* ═══════════════════════════════════════
+           顶部导航栏（极简）
+        ═══════════════════════════════════════ */
+        .top-navbar {
+            background: rgba(10, 16, 26, 0.97) !important;
+            border-bottom: 1px solid rgba(0, 224, 174, 0.12);
+            padding: 0 1.5rem;
+            height: 54px;
+        }
+
+        .top-navbar .navbar-brand {
+            font-size: 14.5px;
+            font-weight: 500;
+            letter-spacing: 0.4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-icon-wrap {
+            width: 30px;
+            height: 30px;
+            background: rgba(0, 224, 174, 0.12);
+            border: 1px solid rgba(0, 224, 174, 0.25);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            color: #00e0ae;
+        }
+
+        .lhost-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 12px;
+            color: rgba(0, 224, 174, 0.75);
+            background: rgba(0, 224, 174, 0.07);
+            border: 1px solid rgba(0, 224, 174, 0.18);
+            border-radius: 20px;
+            padding: 4px 14px;
+            letter-spacing: 0.3px;
+        }
+
+        .lhost-pill .lhost-val {
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+            font-size: 12.5px;
+        }
+
+        .lhost-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #00e0ae;
+            box-shadow: 0 0 6px #00e0ae;
+            animation: pulse-dot 2s infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.35; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 配置数据存储元素 -->
+    <div id="app-config"
+         data-lhost="{{ session.get('lhost', '0.0.0.0') }}"
+         data-controller-initialized="{{ 'true' if session.get('controller_initialized') else 'false' }}"
+         style="display: none;"></div>
+
+    <!-- 顶部极简导航栏 -->
+    <nav class="navbar top-navbar navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <span class="brand-icon-wrap"><i class="fas fa-mobile-alt"></i></span>
+                Android Pentest Framework
+            </a>
+            <span class="lhost-pill">
+                <span class="lhost-dot"></span>
+                LHOST&nbsp;
+                <span id="navbarLhost" class="lhost-val">{{ session.get('lhost', '未设置') }}</span>
+            </span>
+        </div>
+    </nav>
+
+    <!-- 右侧悬浮导航面板 -->
+    <div id="side-nav">
+        <div id="side-nav-panel">
+            <div class="side-nav-inner">
+                <div class="side-nav-header">
+                    <div class="brand-text">Navigation</div>
+                    <div class="brand-sub">Android Pentest Framework</div>
+                </div>
+
+                <div class="side-nav-group-label">主要功能</div>
+
+                <a class="side-nav-item{% if request.endpoint == 'dashboard' %} active{% endif %}"
+                   href="{{ url_for('dashboard') }}">
+                    <i class="fas fa-tachometer-alt side-nav-icon"></i>控制面板
+                </a>
+                <a class="side-nav-item{% if request.endpoint == 'phishing_ui' %} active{% endif %}"
+                   href="{{ url_for('phishing_ui') }}">
+                    <i class="fas fa-fish side-nav-icon"></i>钓鱼攻击
+                </a>
+                <a class="side-nav-item{% if request.endpoint == 'scanning_ui' %} active{% endif %}"
+                   href="{{ url_for('scanning_ui') }}">
+                    <i class="fas fa-crosshairs side-nav-icon"></i>目标扫描
+                </a>
+                <a class="side-nav-item{% if request.endpoint == 'file_upload_ui' %} active{% endif %}"
+                   href="{{ url_for('file_upload_ui') }}">
+                    <i class="fas fa-upload side-nav-icon"></i>文件上传攻击
+                </a>
+                <a class="side-nav-item{% if request.endpoint == 'sqli_ui' %} active{% endif %}"
+                   href="{{ url_for('sqli_ui') }}">
+                    <i class="fas fa-database side-nav-icon"></i>SQL 注入
+                </a>
+
+                <div class="side-nav-group-label">管理</div>
+
+                <a class="side-nav-item{% if request.endpoint == 'sessions_ui' %} active{% endif %}"
+                   href="{{ url_for('sessions_ui') }}">
+                    <i class="fas fa-terminal side-nav-icon"></i>会话管理
+                </a>
+                <a class="side-nav-item{% if request.endpoint == 'results_ui' %} active{% endif %}"
+                   href="{{ url_for('results_ui') }}">
+                    <i class="fas fa-chart-bar side-nav-icon"></i>攻击结果
+                </a>
+                <a class="side-nav-item{% if request.endpoint == 'msfrpc_help' %} active{% endif %}"
+                   href="{{ url_for('msfrpc_help') }}">
+                    <i class="fas fa-server side-nav-icon"></i>MSF RPC
+                </a>
+                <a class="side-nav-item{% if request.endpoint == 'config_info' %} active{% endif %}"
+                   href="{{ url_for('config_info') }}">
+                    <i class="fas fa-sliders-h side-nav-icon"></i>配置信息
+                </a>
+            </div>
+        </div>
+        <div id="side-nav-trigger">
+            <span class="trigger-bar"></span>
+            <span class="trigger-bar"></span>
+            <span class="trigger-bar"></span>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-info alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="bg-dark text-light py-3 mt-5">
+        <div class="container text-center">
+            <p>&copy; 智能安卓渗透系统V1.0</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 从数据属性读取配置
+        const configElement = document.getElementById('app-config');
+        window.APP_CONFIG = {
+            lhost: configElement.getAttribute('data-lhost') || '0.0.0.0',
+            controller_initialized: configElement.getAttribute('data-controller-initialized') === 'true'
+        };
+        
+        // 更新导航栏显示的LHOST
+        document.getElementById('navbarLhost').textContent = window.APP_CONFIG.lhost;
+        
+        // 通用函数：获取配置
+        function getConfig() {
+            return new Promise((resolve, reject) => {
+                if (window.APP_CONFIG && window.APP_CONFIG.controller_initialized) {
+                    resolve(window.APP_CONFIG);
+                } else {
+                    fetch('/api/config/get')
+                        .then(response => response.json())
+                        .then(data => {
+                            window.APP_CONFIG = data;
+                            // 更新导航栏
+                            document.getElementById('navbarLhost').textContent = data.lhost;
+                            resolve(data);
+                        })
+                        .catch(reject);
+                }
+            });
+        }
+        
+        // 通用函数：检查系统是否已初始化
+        function checkSystemInitialized() {
+            return getConfig().then(config => {
+                return config.controller_initialized;
+            });
+        }
+        
+        // 通用函数：初始化系统
+        function initializeSystem(lhost) {
+            return fetch('/api/init', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({lhost: lhost})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.APP_CONFIG = {
+                        lhost: data.lhost,
+                        controller_initialized: true
+                    };
+                    // 更新导航栏
+                    document.getElementById('navbarLhost').textContent = data.lhost;
+                }
+                return data;
+            });
+        }
+    </script>
+    <script src="{{ url_for('static', filename='js/state-manager.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

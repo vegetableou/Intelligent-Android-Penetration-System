@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Android Security Update</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            line-height: 1.6; 
+            color: #333; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-left: 4px solid #fdcb6e;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .warning h3 {
+            color: #e17055;
+            margin: 0 0 10px 0;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        .features {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .features ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .features li {
+            margin-bottom: 8px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 12px;
+        }
+        .urgency {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚨 紧急: Android系统安全更新</h1>
+        </div>
+
+        <p>尊敬的用户，</p>
+
+        <p>我们的安全监控系统检测到您的Android设备存在<strong class="urgency">严重安全漏洞</strong>（CVE-2024-ANDROID-CRITICAL）。此漏洞可能允许攻击者：</p>
+
+        <ul>
+            <li>远程控制您的设备</li>
+            <li>窃取个人信息和密码</li>
+            <li>访问您的照片、消息和文件</li>
+            <li>监控您的活动</li>
+        </ul>
+
+        <div class="warning">
+            <h3>⚠️ 安全威胁级别: 严重</h3>
+            <p>建议: <strong>立即安装安全更新</strong></p>
+        </div>
+
+        <p>为了保护您的设备和个人数据，请立即下载并安装此紧急安全更新：</p>
+
+        <div style="text-align: center;">
+            <a href="{{.URL}}" class="button">
+                🔒 立即下载安全更新
+            </a>
+        </div>
+
+        <div class="features">
+            <h3>本次安全更新包含：</h3>
+            <ul>
+                <li>修复严重远程代码执行漏洞</li>
+                <li>增强系统安全性和隐私保护</li>
+                <li>优化设备性能和电池寿命</li>
+                <li>更新安全补丁至最新版本</li>
+                <li>修复已知的系统稳定性问题</li>
+            </ul>
+        </div>
+
+        <p><strong>安装说明：</strong></p>
+        <ol>
+            <li>点击上方按钮下载更新文件</li>
+            <li>打开文件管理器找到下载的文件</li>
+            <li>点击安装并在提示时允许"未知来源"</li>
+            <li>完成安装后重启您的设备</li>
+        </ol>
+
+        <div class="warning">
+            <p><strong>重要提醒：</strong> 请勿忽略此更新。延迟安装将使您的设备面临严重安全风险。</p>
+        </div>
+
+        <p>如果您在安装过程中遇到任何问题，请立即联系我们的技术支持团队。</p>
+
+        <p>谢谢，<br>
+        <strong>Android安全团队</strong></p>
+
+        <div class="footer">
+            <p>© 2024 Android Security Team. 保留所有权利。</p>
+            <p>此邮件为系统自动发送，请勿回复。</p>
+            <p>如果您认为收到此邮件有误，请忽略它。</p>
+        </div>
+    </div>
+</body>
+</html>

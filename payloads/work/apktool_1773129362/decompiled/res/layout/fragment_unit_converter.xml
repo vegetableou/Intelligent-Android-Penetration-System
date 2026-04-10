@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout android:layout_width="fill_parent" android:layout_height="fill_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <com.google.android.material.textfield.TextInputLayout android:id="@id/physicalQuantityTextInputLayout" android:hint="@string/title_physical_quantity" app:layout_constraintBottom_toBottomOf="@id/materialAutoCompleteTextViewsBarrier" app:layout_constraintEnd_toStartOf="@id/unitTextInputLayout" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" style="@style/UnitTextInputLayout.Left">
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView android:id="@id/physicalQuantityAutoCompleteTextView" style="@style/UnitMaterialAutoCompleteTextView" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <com.google.android.material.textfield.TextInputLayout android:id="@id/unitTextInputLayout" android:hint="@string/title_unit" app:layout_constraintBottom_toBottomOf="@id/materialAutoCompleteTextViewsBarrier" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toEndOf="@id/physicalQuantityTextInputLayout" app:layout_constraintTop_toTopOf="parent" style="@style/UnitTextInputLayout.Right">
+        <com.google.android.material.textfield.MaterialAutoCompleteTextView android:id="@id/unitAutoCompleteTextView" style="@style/UnitMaterialAutoCompleteTextView" />
+    </com.google.android.material.textfield.TextInputLayout>
+    <androidx.constraintlayout.widget.Barrier android:id="@id/materialAutoCompleteTextViewsBarrier" android:layout_width="wrap_content" android:layout_height="wrap_content" app:barrierDirection="bottom" app:constraint_referenced_ids="physicalQuantityTextInputLayout,unitTextInputLayout" />
+    <androidx.recyclerview.widget.RecyclerView android:id="@id/unitRecyclerView" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="@id/materialAutoCompleteTextViewsBarrier" style="@style/UnitRecyclerView" />
+</androidx.constraintlayout.widget.ConstraintLayout>

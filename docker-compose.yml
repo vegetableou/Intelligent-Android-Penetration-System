@@ -1,0 +1,109 @@
+# ============================================================
+#  Android自动化渗透测试框架 - Docker Compose配置
+#  一键部署完整渗透测试环境
+# ============================================================
+version: '3.8'
+
+services:
+  # ---- 主应用服务 ----
+  android-pentest:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: android-pentest-framework
+    hostname: pentest-framework
+    restart: unless-stopped
+    
+    # 端口映射
+    ports:
+      - "5000:5000"   # Web管理界面
+      - "8080:8080"   # 文件分发/钓鱼服务器
+      - "4444:4444"   # Meterpreter监听器
+    
+    # 环境变量
+    environment:
+      - FLASK_ENV=production
+      - LHOST=${LHOST:-0.0.0.0}
+      - LPORT=${LPORT:-4444}
+      - WEB_PORT=5000
+      - NGROK_AUTH_TOKEN=${NGROK_AUTH_TOKEN:-}
+      - GOPHISH_API_KEY=${GOPHISH_API_KEY:-}
+      - TZ=Asia/Shanghai
+    
+    # 数据卷挂载
+    volumes:
+      - ./payloads:/app/payloads
+      - ./logs:/app/logs
+      - ./config:/app/config
+      - ./scan_results:/app/scan_results
+      - payload-cache:/app/.cache
+    
+    # 网络配置
+    networks:
+      - pentest-net
+    
+    # 依赖服务
+    depends_on:
+      - gophish
+    
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+
+  # ---- GoPhish钓鱼服务 ----
+  gophish:
+    image: gophish/gophish:latest
+    container_name: gophish-server
+    hostname: gophish
+    restart: unless-stopped
+    
+    # 端口映射
+    ports:
+      - "3333:3333"   # GoPhish管理界面
+      - "8081:80"     # GoPhish钓鱼页面
+    
+    # 环境变量
+    environment:
+      - GOPHISH_INITIAL_ADMIN_PASSWORD=${GOPHISH_PASSWORD:-changeme123}
+      - GOPHISH_INITIAL_ADMIN_USER=admin
+      - TZ=Asia/Shanghai
+    
+    # 数据卷
+    volumes:
+      - gophish-data:/app/gophish.db
+      - gophish-config:/app/config
+    
+    # 网络配置
+    networks:
+      - pentest-net
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3333/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+# ---- 网络配置 ----
+networks:
+  pentest-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# ---- 数据卷 ----
+volumes:
+  gophish-data:
+    driver: local
+  gophish-config:
+    driver: local
+  payload-cache:
+    driver: local

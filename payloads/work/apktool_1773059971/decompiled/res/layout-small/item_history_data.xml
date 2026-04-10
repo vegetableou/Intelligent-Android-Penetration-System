@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout android:layout_width="fill_parent" android:layout_height="wrap_content"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <View android:id="@id/dividingLine" android:background="?colorSurfaceVariant" android:layout_width="0.0dip" android:layout_height="@dimen/_1sdp" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
+    <TextView android:id="@id/dateText" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@id/dividingLine" style="@style/DateText" />
+    <TextView android:id="@id/expressionText" app:layout_constraintEnd_toStartOf="@id/toolbar" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@id/dateText" style="@style/ExpressionText" />
+    <TextView android:id="@id/resultText" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toStartOf="@id/toolbar" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@id/expressionText" style="@style/ExpressionText.ResultText" />
+    <com.google.android.material.appbar.MaterialToolbar android:id="@id/toolbar" app:layout_constraintBottom_toBottomOf="@id/resultText" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toTopOf="@id/expressionText" style="@style/HistoryToolbar" />
+</androidx.constraintlayout.widget.ConstraintLayout>

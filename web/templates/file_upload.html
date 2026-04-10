@@ -1,0 +1,721 @@
+<!-- web/templates/file_upload.html -->
+{% extends "base.html" %}
+
+{% block title %}文件上传攻击 - Android自动化渗透测试框架{% endblock %}
+
+{% block content %}
+<!-- 配置状态提示 -->
+<div id="fileUploadConfigAlert" class="alert alert-warning" style="display: none;">
+    <i class="fas fa-exclamation-triangle"></i> 系统未初始化，请先到<a href="{{ url_for('dashboard') }}">控制面板</a>设置LHOST
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <h1><i class="fas fa-upload"></i> 文件上传攻击</h1>
+        <p class="text-muted">利用Web应用文件上传漏洞部署恶意APK</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cog"></i> 攻击配置</h5>
+            </div>
+            <div class="card-body">
+                <form id="fileUploadForm">
+                    <div class="mb-3">
+                        <label for="targetUrl" class="form-label">目标URL</label>
+                        <input type="url" class="form-control" id="targetUrl" 
+                               placeholder="http://example.com" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="fileUploadLhost" class="form-label">监听地址 (LHOST)</label>
+                                <input type="text" class="form-control" id="fileUploadLhost" 
+                                       value="0.0.0.0" readonly>
+                                <div class="form-text">使用系统初始化时设置的LHOST</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="fileUploadLport" class="form-label">监听端口 (LPORT)</label>
+                                <input type="number" class="form-control" id="fileUploadLport" 
+                                       value="4444" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="fileUploadArchitecture" class="form-label">目标架构</label>
+                        <select class="form-select" id="fileUploadArchitecture">
+                            <option value="arm" selected>ARM架构 (大多数Android设备)</option>
+                            <option value="arm64">ARM64架构 (现代Android设备)</option>
+                            <option value="x86">x86架构 (少数Android设备)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="fileUploadStealth" class="form-label">隐身级别</label>
+                        <select class="form-select" id="fileUploadStealth">
+                            <option value="low">低级隐身 - 快速生成</option>
+                            <option value="medium" selected>中级隐身 - 平衡性能与隐蔽性</option>
+                            <option value="high">高级隐身 - 最大隐蔽性</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 高级选项 -->
+                    <div class="mb-3">
+                        <a class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" href="#advancedOptions" role="button">
+                            <i class="fas fa-cog"></i> 高级选项
+                        </a>
+                    </div>
+                    
+                    <div class="collapse" id="advancedOptions">
+                        <div class="card card-body bg-light mb-3">
+                            <div class="mb-3">
+                                <label for="customPayloadName" class="form-label">自定义载荷文件名</label>
+                                <input type="text" class="form-control" id="customPayloadName" 
+                                       placeholder="app_update.apk (可选)">
+                                <div class="form-text">留空将使用随机生成的文件名</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="bypassTechnique" class="form-label">绕过技术</label>
+                                <select class="form-select" id="bypassTechnique">
+                                    <option value="none" selected>无 - 直接上传</option>
+                                    <option value="extension">扩展名绕过 (.jpg.apk)</option>
+                                    <option value="mime">MIME类型伪造</option>
+                                    <option value="double">双重扩展名 (apk.jpg)</option>
+                                    <option value="null">空字节绕过 (%00)</option>
+                                    <option value="case">大小写混淆 (.ApK)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="manualEndpoints" class="form-label">手动指定上传端点</label>
+                                <textarea class="form-control" id="manualEndpoints" rows="2" 
+                                          placeholder="/upload.php&#10;/api/upload (可选，每行一个)"></textarea>
+                                <div class="form-text">留空将自动检测端点</div>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="verifyUpload">
+                                <label class="form-check-label" for="verifyUpload">
+                                    上传后验证文件可访问性
+                                </label>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="autoTrigger" checked>
+                                <label class="form-check-label" for="autoTrigger">
+                                    自动触发载荷执行
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-warning btn-lg">
+                            <i class="fas fa-play"></i> 启动文件上传攻击
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-search"></i> 上传端点扫描</h5>
+            </div>
+            <div class="card-body">
+                <form id="scanUploadForm">
+                    <div class="mb-3">
+                        <label for="scanTargetUrl" class="form-label">扫描目标URL</label>
+                        <input type="url" class="form-control" id="scanTargetUrl" 
+                               placeholder="http://example.com" required>
+                    </div>
+                    <button type="submit" class="btn btn-info">
+                        <i class="fas fa-search"></i> 扫描上传端点
+                    </button>
+                </form>
+                
+                <div id="scanResults" class="mt-3">
+                    <!-- 扫描结果将显示在这里 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> 攻击状态</h5>
+            </div>
+            <div class="card-body">
+                <div id="attackStatus">
+                    <p class="text-muted text-center">等待攻击启动...</p>
+                </div>
+                
+                <div class="mt-3" id="activeAttackInfo" style="display: none;">
+                    <h6>活动攻击信息</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <th>目标:</th>
+                            <td id="currentTarget">-</td>
+                        </tr>
+                        <tr>
+                            <th>攻击类型:</th>
+                            <td>文件上传漏洞</td>
+                        </tr>
+                        <tr>
+                            <th>状态:</th>
+                            <td><span id="attackActiveStatus" class="badge bg-success">运行中</span></td>
+                        </tr>
+                        <tr>
+                            <th>发现的端点:</th>
+                            <td id="endpointsFound">0</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-list"></i> 攻击结果</h5>
+            </div>
+            <div class="card-body">
+                <div id="attackResults">
+                    <p class="text-muted text-center">攻击结果将显示在这里</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-lightbulb"></i> 使用说明</h5>
+            </div>
+            <div class="card-body">
+                <h6>文件上传攻击流程:</h6>
+                <ol class="small">
+                    <li>扫描目标网站的文件上传功能</li>
+                    <li>生成恶意APK载荷</li>
+                    <li>尝试上传到发现的端点</li>
+                    <li>绕过文件类型检查（如需要）</li>
+                    <li>触发载荷执行</li>
+                    <li>建立Meterpreter会话</li>
+                </ol>
+                
+                <div class="alert alert-info mt-3">
+                    <h6><i class="fas fa-info-circle"></i> 注意事项</h6>
+                    <ul class="mb-0 small">
+                        <li>目标必须运行Web服务</li>
+                        <li>需要存在文件上传功能</li>
+                        <li>可能需要身份验证</li>
+                        <li>成功率取决于目标的安全配置</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 结果模态框 -->
+<div class="modal fade" id="resultModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">攻击结果</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="resultContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 状态管理器
+const fileUploadState = new StateManager('file_upload');
+
+// 保存当前页面状态
+function saveFileUploadPageState(extra) {
+    const state = {
+        targetUrl: document.getElementById('targetUrl').value,
+        lport: document.getElementById('fileUploadLport').value,
+        architecture: document.getElementById('fileUploadArchitecture').value,
+        stealth: document.getElementById('fileUploadStealth').value,
+        customPayloadName: document.getElementById('customPayloadName').value,
+        bypassTechnique: document.getElementById('bypassTechnique').value,
+        manualEndpoints: document.getElementById('manualEndpoints').value,
+        verifyUpload: document.getElementById('verifyUpload').checked,
+        autoTrigger: document.getElementById('autoTrigger').checked,
+        scanTargetUrl: document.getElementById('scanTargetUrl').value,
+        // 保存动态区域的HTML
+        attackStatusHTML: document.getElementById('attackStatus').innerHTML,
+        activeAttackInfoVisible: document.getElementById('activeAttackInfo').style.display !== 'none',
+        activeAttackTarget: document.getElementById('currentTarget').textContent,
+        endpointsFound: document.getElementById('endpointsFound').textContent,
+        scanResultsHTML: document.getElementById('scanResults').innerHTML,
+        attackResultsHTML: document.getElementById('attackResults').innerHTML,
+    };
+    if (extra) {
+        Object.assign(state, extra);
+    }
+    fileUploadState.saveState(state);
+}
+
+// 恢复页面状态
+function restoreFileUploadPageState() {
+    const state = fileUploadState.loadState();
+    if (!state) return;
+
+    // 恢复表单字段
+    if (state.targetUrl) document.getElementById('targetUrl').value = state.targetUrl;
+    if (state.lport) document.getElementById('fileUploadLport').value = state.lport;
+    if (state.architecture) document.getElementById('fileUploadArchitecture').value = state.architecture;
+    if (state.stealth) document.getElementById('fileUploadStealth').value = state.stealth;
+    if (state.customPayloadName) document.getElementById('customPayloadName').value = state.customPayloadName;
+    if (state.bypassTechnique) document.getElementById('bypassTechnique').value = state.bypassTechnique;
+    if (state.manualEndpoints) document.getElementById('manualEndpoints').value = state.manualEndpoints;
+    if (state.verifyUpload !== undefined) document.getElementById('verifyUpload').checked = state.verifyUpload;
+    if (state.autoTrigger !== undefined) document.getElementById('autoTrigger').checked = state.autoTrigger;
+    if (state.scanTargetUrl) document.getElementById('scanTargetUrl').value = state.scanTargetUrl;
+
+    // 恢复动态结果区域
+    if (state.attackStatusHTML) {
+        document.getElementById('attackStatus').innerHTML = state.attackStatusHTML;
+    }
+    if (state.activeAttackInfoVisible) {
+        document.getElementById('activeAttackInfo').style.display = 'block';
+        if (state.activeAttackTarget) document.getElementById('currentTarget').textContent = state.activeAttackTarget;
+        if (state.endpointsFound) document.getElementById('endpointsFound').textContent = state.endpointsFound;
+    }
+    if (state.scanResultsHTML) {
+        document.getElementById('scanResults').innerHTML = state.scanResultsHTML;
+    }
+    if (state.attackResultsHTML) {
+        document.getElementById('attackResults').innerHTML = state.attackResultsHTML;
+    }
+
+    // 如果有运行中的任务，尝试轮询恢复
+    const taskId = fileUploadState.getTaskId();
+    if (taskId) {
+        fileUploadState.pollTaskStatus(taskId, function(task) {
+            if (task.status === 'completed' && task.result) {
+                showFileUploadResult(task.result);
+                saveFileUploadPageState({ lastResult: task.result });
+            } else if (task.status === 'failed') {
+                document.getElementById('attackStatus').innerHTML =
+                    `<div class="alert alert-danger">任务失败: ${task.error || '未知错误'}</div>`;
+                saveFileUploadPageState();
+            }
+        });
+    }
+}
+
+// 页面加载时初始化 - 合并后的代码
+document.addEventListener('DOMContentLoaded', function() {
+    // 恢复之前保存的状态
+    restoreFileUploadPageState();
+
+    // 检查系统是否已初始化并设置LHOST
+    if (typeof checkSystemInitialized === 'function') {
+        checkSystemInitialized().then(initialized => {
+            if (initialized) {
+                // 已初始化，获取配置并更新LHOST
+                getConfig().then(config => {
+                    document.getElementById('fileUploadLhost').value = config.lhost;
+                });
+                // 隐藏警告
+                document.getElementById('fileUploadConfigAlert').style.display = 'none';
+            } else {
+                // 未初始化，显示警告
+                document.getElementById('fileUploadConfigAlert').style.display = 'block';
+                // 设置默认LHOST
+                document.getElementById('fileUploadLhost').value = window.location.hostname;
+            }
+        }).catch(error => {
+            console.error('检查系统初始化状态失败:', error);
+            // 设置默认LHOST作为后备
+            document.getElementById('fileUploadLhost').value = window.location.hostname;
+        });
+    } else {
+        // 如果checkSystemInitialized函数不存在，则直接获取配置
+        if (typeof getConfig === 'function') {
+            getConfig().then(config => {
+                if (config.controller_initialized) {
+                    document.getElementById('fileUploadLhost').value = config.lhost;
+                    document.getElementById('fileUploadConfigAlert').style.display = 'none';
+                } else {
+                    document.getElementById('fileUploadConfigAlert').style.display = 'block';
+                    document.getElementById('fileUploadLhost').value = window.location.hostname;
+                }
+            }).catch(error => {
+                console.error('获取配置失败:', error);
+                document.getElementById('fileUploadLhost').value = window.location.hostname;
+            });
+        } else {
+            // 后备方案：设置默认LHOST
+            document.getElementById('fileUploadLhost').value = window.location.hostname;
+        }
+    }
+    
+    // 文件上传攻击表单
+    document.getElementById('fileUploadForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // 检查系统是否已初始化
+        checkSystemInitialized().then(initialized => {
+            if (!initialized) {
+                alert('系统未初始化，请先到控制面板设置LHOST');
+                return;
+            }
+            
+            // 获取表单数据
+            const targetUrl = document.getElementById('targetUrl').value;
+            const lhost = document.getElementById('fileUploadLhost').value;
+            const lport = document.getElementById('fileUploadLport').value;
+            const architecture = document.getElementById('fileUploadArchitecture').value;
+            const stealth = document.getElementById('fileUploadStealth').value;
+            
+            // 获取高级选项
+            const customPayloadName = document.getElementById('customPayloadName').value;
+            const bypassTechnique = document.getElementById('bypassTechnique').value;
+            const manualEndpoints = document.getElementById('manualEndpoints').value;
+            const verifyUpload = document.getElementById('verifyUpload').checked;
+            const autoTrigger = document.getElementById('autoTrigger').checked;
+            
+            // 发送攻击请求
+            const formData = {
+                target_url: targetUrl,
+                lhost: lhost,
+                lport: parseInt(lport),
+                architecture: architecture,
+                stealth_level: stealth,
+                custom_payload_name: customPayloadName,
+                bypass_technique: bypassTechnique,
+                manual_endpoints: manualEndpoints,
+                verify_upload: verifyUpload,
+                auto_trigger: autoTrigger
+            };
+            
+            startFileUploadAttack(formData);
+            // 保存表单状态
+            saveFileUploadPageState();
+        }).catch(error => {
+            alert('检查系统状态失败: ' + error);
+        });
+    });
+
+    // 上传端点扫描表单
+    document.getElementById('scanUploadForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const targetUrl = document.getElementById('scanTargetUrl').value;
+        scanUploadEndpoints(targetUrl);
+        // 保存扫描目标
+        saveFileUploadPageState();
+    });
+});
+
+// 原第一个scripts块中的函数保持不变
+function startFileUploadAttack(formData) {
+    const statusDiv = document.getElementById('attackStatus');
+    const infoDiv = document.getElementById('activeAttackInfo');
+    
+    statusDiv.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-warning" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+            <p class="mt-2">启动文件上传攻击...</p>
+        </div>
+    `;
+    
+    fetch('/api/attack/file-upload', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        // 保存任务ID（如果后端返回）
+        if (data.task_id) {
+            fileUploadState.saveTaskId(data.task_id);
+        }
+
+        showFileUploadResult(data);
+        
+        if (data.success) {
+            statusDiv.style.display = 'none';
+            infoDiv.style.display = 'block';
+            
+            document.getElementById('currentTarget').textContent = data.target;
+            document.getElementById('endpointsFound').textContent =
+                data.upload_results ? data.upload_results.length : 0;
+        } else {
+            statusDiv.innerHTML = `<div class="alert alert-danger">攻击启动失败: ${data.error}</div>`;
+        }
+        // 保存攻击结果状态
+        saveFileUploadPageState({ lastAttackResult: data });
+    })
+    .catch(error => {
+        statusDiv.innerHTML = `<div class="alert alert-danger">请求失败: ${error}</div>`;
+        saveFileUploadPageState();
+    });
+}
+
+function scanUploadEndpoints(targetUrl) {
+    const resultsDiv = document.getElementById('scanResults');
+    
+    resultsDiv.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-info" role="status">
+                <span class="visually-hidden">扫描中...</span>
+            </div>
+            <p class="mt-2">扫描文件上传端点...</p>
+        </div>
+    `;
+    
+    fetch('/api/scan/upload-endpoints', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({target_url: targetUrl})
+    })
+    .then(response => response.json())
+    .then(data => {
+        displayScanResults(data);
+        // 保存扫描结果状态
+        saveFileUploadPageState({ lastScanResult: data });
+    })
+    .catch(error => {
+        resultsDiv.innerHTML = `<div class="alert alert-danger">扫描失败: ${error}</div>`;
+        saveFileUploadPageState();
+    });
+}
+
+function displayScanResults(data) {
+    const resultsDiv = document.getElementById('scanResults');
+    
+    if (data.success) {
+        let html = `
+            <div class="alert alert-success">
+                <h6>扫描完成</h6>
+                <p>发现 ${data.endpoints_found} 个文件上传端点</p>
+            </div>
+        `;
+        
+        if (data.endpoints && data.endpoints.length > 0) {
+            html += '<div class="list-group">';
+            
+            data.endpoints.forEach(endpoint => {
+                const confidence = endpoint.confidence || 0;
+                let confidenceBadge = '';
+                
+                if (confidence >= 70) {
+                    confidenceBadge = '<span class="badge bg-success">高置信度</span>';
+                } else if (confidence >= 40) {
+                    confidenceBadge = '<span class="badge bg-warning">中置信度</span>';
+                } else {
+                    confidenceBadge = '<span class="badge bg-danger">低置信度</span>';
+                }
+                
+                html += `
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">${endpoint.path}</h6>
+                        ${confidenceBadge}
+                    </div>
+                    <p class="mb-1">URL: <code>${endpoint.url}</code></p>
+                    <p class="mb-1">方法: ${endpoint.method} | 状态: ${endpoint.status_code}</p>
+                    <small class="text-muted">置信度: ${confidence}%</small>
+                </div>
+                `;
+            });
+            
+            html += '</div>';
+        } else {
+            html += '<p class="text-muted">未发现文件上传端点</p>';
+        }
+        
+        resultsDiv.innerHTML = html;
+    } else {
+        resultsDiv.innerHTML = `<div class="alert alert-danger">扫描失败: ${data.error}</div>`;
+    }
+}
+
+function showFileUploadResult(data) {
+    const resultContent = document.getElementById('resultContent');
+    let html = '';
+    
+    if (data.success) {
+        html = `
+        <div class="alert alert-success">
+            <h6><i class="fas fa-check-circle"></i> 文件上传攻击执行成功！</h6>
+            <p class="mb-0">${data.message || '攻击已完成，等待目标触发载荷'}</p>
+        </div>
+        
+        <h6>攻击详情:</h6>
+        <table class="table table-bordered">
+            <tr><th>目标</th><td>${data.target}</td></tr>
+            <tr><th>攻击类型</th><td>${data.attack_type}</td></tr>
+            <tr><th>发现的端点</th><td>${data.upload_results ? data.upload_results.length : 0}</td></tr>
+            <tr><th>成功上传</th><td>${data.successful_uploads ? data.successful_uploads.length : 0}</td></tr>
+        </table>
+        `;
+        
+        // 显示攻击过程详情
+        if (data.attack_details) {
+            html += `
+            <h6 class="mt-3">攻击过程:</h6>
+            <div class="timeline">
+            `;
+            
+            data.attack_details.forEach((detail, index) => {
+                const statusIcon = detail.success ? 
+                    '<i class="fas fa-check-circle text-success"></i>' : 
+                    '<i class="fas fa-times-circle text-danger"></i>';
+                
+                html += `
+                <div class="timeline-item mb-2">
+                    <div class="d-flex align-items-center">
+                        <span class="me-2">${statusIcon}</span>
+                        <div>
+                            <strong>${detail.step}</strong>
+                            <small class="text-muted d-block">${detail.message}</small>
+                        </div>
+                    </div>
+                </div>
+                `;
+            });
+            
+            html += `</div>`;
+        }
+        
+        if (data.successful_uploads && data.successful_uploads.length > 0) {
+            html += `
+            <h6 class="mt-3">成功上传的端点:</h6>
+            <div class="list-group">
+            `;
+            
+            data.successful_uploads.forEach(upload => {
+                const confidenceBadge = upload.confidence === 'high' ? 
+                    '<span class="badge bg-success">高置信度</span>' :
+                    upload.confidence === 'medium' ? 
+                    '<span class="badge bg-warning">中置信度</span>' :
+                    '<span class="badge bg-secondary">低置信度</span>';
+                
+                html += `
+                <div class="list-group-item list-group-item-success">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>${upload.endpoint.url}</strong><br>
+                            <small>状态: ${upload.status_code} | 路径: ${upload.uploaded_path || 'N/A'}</small>
+                        </div>
+                        ${confidenceBadge}
+                    </div>
+                </div>
+                `;
+            });
+            
+            html += `</div>`;
+        }
+        
+        // 显示触发结果
+        if (data.trigger_results && data.trigger_results.length > 0) {
+            html += `
+            <h6 class="mt-3">载荷触发结果:</h6>
+            <div class="list-group">
+            `;
+            
+            data.trigger_results.forEach(trigger => {
+                const triggerIcon = trigger.success ? 
+                    '<i class="fas fa-check text-success"></i>' : 
+                    '<i class="fas fa-times text-danger"></i>';
+                
+                html += `
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>${triggerIcon} <strong>${trigger.method || '触发'}</strong></span>
+                        <small class="text-muted">${trigger.status_code || 'N/A'}</small>
+                    </div>
+                    ${trigger.trigger_url ? `<small class="text-muted">URL: ${trigger.trigger_url}</small>` : ''}
+                </div>
+                `;
+            });
+            
+            html += `</div>`;
+        }
+        
+        if (data.payload) {
+            html += `
+            <h6 class="mt-3">生成的载荷:</h6>
+            <table class="table table-sm">
+                <tr><th>文件名称</th><td>${data.payload.payload_name}</td></tr>
+                <tr><th>文件大小</th><td>${(data.payload.file_size / 1024 / 1024).toFixed(2)} MB</td></tr>
+                <tr><th>目标架构</th><td>${data.payload.architecture}</td></tr>
+                <tr><th>文件哈希</th><td><code>${data.payload.file_hash ? data.payload.file_hash.substring(0, 16) + '...' : 'N/A'}</code></td></tr>
+            </table>
+            `;
+        }
+        
+        html += `
+        <div class="alert alert-info mt-3">
+            <strong><i class="fas fa-info-circle"></i> 下一步:</strong> 
+            等待目标访问上传的恶意文件，Meterpreter会话将在<a href="/sessions">会话管理</a>界面显示。
+        </div>
+        `;
+    } else {
+        html = `
+        <div class="alert alert-danger">
+            <h6><i class="fas fa-exclamation-triangle"></i> 文件上传攻击失败</h6>
+            <p>${data.error}</p>
+        </div>
+        `;
+        
+        // 显示详细的错误分析
+        if (data.error_analysis) {
+            html += `
+            <h6>错误分析:</h6>
+            <div class="alert alert-warning">
+                <p><strong>可能原因:</strong> ${data.error_analysis.cause}</p>
+                <p><strong>建议:</strong> ${data.error_analysis.suggestion}</p>
+            </div>
+            `;
+        }
+        
+        if (data.upload_results && data.upload_results.length > 0) {
+            html += `
+            <h6>上传尝试详情:</h6>
+            <div class="list-group">
+            `;
+            
+            data.upload_results.forEach(result => {
+                const resultClass = result.success ? 'list-group-item-success' : 'list-group-item-danger';
+                html += `
+                <div class="list-group-item ${resultClass}">
+                    <strong>${result.endpoint ? result.endpoint.url : 'Unknown'}</strong><br>
+                    <small>${result.success ? '成功' : '失败'}: ${result.error || result.message || 'N/A'}</small>
+                </div>
+                `;
+            });
+            
+            html += `</div>`;
+        }
+    }
+    
+    resultContent.innerHTML = html;
+    new bootstrap.Modal(document.getElementById('resultModal')).show();
+}
+</script>
+{% endblock %}

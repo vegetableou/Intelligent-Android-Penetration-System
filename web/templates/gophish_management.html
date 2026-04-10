@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}GoPhish配置管理 - Android自动化渗透测试框架{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1><i class="fas fa-cogs"></i> GoPhish配置管理</h1>
+        <p class="text-muted">管理GoPhish用户组、邮件模板、钓鱼页面、发送配置和活动</p>
+    </div>
+</div>
+
+<!-- 系统状态 -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-server"></i> 系统状态</h5>
+            </div>
+            <div class="card-body">
+                <div id="systemStatus">
+                    <p class="text-muted text-center">加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 选项卡导航 -->
+<div class="row mt-4">
+    <div class="col-md-12">
+        <ul class="nav nav-tabs" id="gophishTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="groups-tab" data-bs-toggle="tab" data-bs-target="#groups" type="button" role="tab">
+                    <i class="fas fa-users"></i> 用户组
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="templates-tab" data-bs-toggle="tab" data-bs-target="#templates" type="button" role="tab">
+                    <i class="fas fa-envelope"></i> 邮件模板
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="pages-tab" data-bs-toggle="tab" data-bs-target="#pages" type="button" role="tab">
+                    <i class="fas fa-file-alt"></i> 钓鱼页面
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="profiles-tab" data-bs-toggle="tab" data-bs-target="#profiles" type="button" role="tab">
+                    <i class="fas fa-paper-plane"></i> 发送配置
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="campaigns-tab" data-bs-toggle="tab" data-bs-target="#campaigns" type="button" role="tab">
+                    <i class="fas fa-rocket"></i> 活动管理
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="gophishTabContent">
+            <!-- 用户组管理 -->
+            <div class="tab-pane fade show active" id="groups" role="tabpanel">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">用户组管理</h5>
+                        <button class="btn btn-primary btn-sm" onclick="showCreateGroupModal()">
+                            <i class="fas fa-plus"></i> 创建用户组
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="groupsList">
+                            <p class="text-muted text-center">加载中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 邮件模板管理 -->
+            <div class="tab-pane fade" id="templates" role="tabpanel">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">邮件模板管理</h5>
+                        <button class="btn btn-primary btn-sm" onclick="showCreateTemplateModal()">
+                            <i class="fas fa-plus"></i> 创建模板
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="templatesList">
+                            <p class="text-muted text-center">加载中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 钓鱼页面管理 -->
+            <div class="tab-pane fade" id="pages" role="tabpanel">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">钓鱼页面管理</h5>
+                        <button class="btn btn-primary btn-sm" onclick="showCreatePageModal()">
+                            <i class="fas fa-plus"></i> 创建页面
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="pagesList">
+                            <p class="text-muted text-center">加载中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 发送配置管理 -->
+            <div class="tab-pane fade" id="profiles" role="tabpanel">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">发送配置管理</h5>
+                        <button class="btn btn-primary btn-sm" onclick="showCreateProfileModal()">
+                            <i class="fas fa-plus"></i> 创建配置
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="profilesList">
+                            <p class="text-muted text-center">加载中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 活动管理 -->
+            <div class="tab-pane fade" id="campaigns" role="tabpanel">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">活动管理</h5>
+                        <button class="btn btn-primary btn-sm" onclick="showCreateCampaignModal()">
+                            <i class="fas fa-plus"></i> 创建活动
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="campaignsList">
+                            <p class="text-muted text-center">加载中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 模态框区域 -->
+{% include 'gophish_modals.html' %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/gophish_management.js') }}"></script>
+{% endblock %}

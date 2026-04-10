@@ -1,0 +1,112 @@
+{
+  "target": "192.168.25.141",
+  "scan_type": "quick",
+  "timestamp": 1772634155.92146,
+  "tools_status": {
+    "nmap": true,
+    "ffuf": true,
+    "nuclei": true
+  },
+  "phases": {
+    "host_discovery": {
+      "success": true,
+      "hosts": [
+        {
+          "ip": "192.168.25.141",
+          "type": "ipv4",
+          "status": "up",
+          "reason": "arp-response"
+        }
+      ],
+      "total_hosts": 1,
+      "result_file": "scan_results/host_discovery_192_168_25_141.json"
+    },
+    "port_scan": {
+      "success": true,
+      "results": {
+        "target": "192.168.25.141",
+        "scan_info": {
+          "type": "syn",
+          "protocol": "tcp",
+          "services": "1000"
+        },
+        "services": [
+          {
+            "port": "21",
+            "protocol": "tcp",
+            "state": "open",
+            "service": "ftp",
+            "version": "",
+            "product": "",
+            "extrainfo": ""
+          },
+          {
+            "port": "22",
+            "protocol": "tcp",
+            "state": "open",
+            "service": "ssh",
+            "version": "",
+            "product": "",
+            "extrainfo": ""
+          },
+          {
+            "port": "80",
+            "protocol": "tcp",
+            "state": "open",
+            "service": "http",
+            "version": "",
+            "product": "",
+            "extrainfo": ""
+          },
+          {
+            "port": "445",
+            "protocol": "tcp",
+            "state": "open",
+            "service": "microsoft-ds",
+            "version": "",
+            "product": "",
+            "extrainfo": ""
+          },
+          {
+            "port": "631",
+            "protocol": "tcp",
+            "state": "open",
+            "service": "ipp",
+            "version": "",
+            "product": "",
+            "extrainfo": ""
+          }
+        ],
+        "vulnerabilities": [],
+        "os_info": {},
+        "scan_stats": {
+          "time": "1772634161",
+          "elapsed": "5.30",
+          "summary": "Nmap done at Wed Mar  4 09:22:41 2026; 1 IP address (1 host up) scanned in 5.30 seconds"
+        }
+      },
+      "result_file": "scan_results/port_scan_192_168_25_141.json"
+    },
+    "basic_web": {
+      "success": false,
+      "error": "\u672a\u53d1\u73b0Web\u670d\u52a1"
+    }
+  },
+  "summary": {
+    "target": "192.168.25.141",
+    "scan_type": "quick",
+    "timestamp": 1772634155.92146,
+    "phases_completed": [
+      "host_discovery",
+      "port_scan",
+      "basic_web"
+    ],
+    "risk_level": "low",
+    "recommended_attacks": [
+      "\u9493\u9c7c\u653b\u51fb"
+    ],
+    "vulnerability_count": 0,
+    "service_count": 0,
+    "web_services": 0
+  }
+}

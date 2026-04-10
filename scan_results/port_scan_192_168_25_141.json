@@ -1,0 +1,35 @@
+{
+  "target": "192.168.25.141",
+  "scan_info": {
+    "type": "syn",
+    "protocol": "tcp",
+    "services": "2"
+  },
+  "services": [
+    {
+      "port": "80",
+      "protocol": "tcp",
+      "state": "open",
+      "service": "http",
+      "version": "",
+      "product": "",
+      "extrainfo": ""
+    },
+    {
+      "port": "443",
+      "protocol": "tcp",
+      "state": "filtered",
+      "service": "https",
+      "version": "",
+      "product": "",
+      "extrainfo": ""
+    }
+  ],
+  "vulnerabilities": [],
+  "os_info": {},
+  "scan_stats": {
+    "time": "1772634163",
+    "elapsed": "1.89",
+    "summary": "Nmap done at Wed Mar  4 09:22:43 2026; 1 IP address (1 host up) scanned in 1.89 seconds"
+  }
+}
